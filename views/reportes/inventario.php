@@ -87,8 +87,8 @@ try {
                       SUM(CASE WHEN Estado = 'Activo' THEN 1 ELSE 0 END) as items_activos,
                       SUM(CASE WHEN Cantidad_Stock <= Stock_Minimo THEN 1 ELSE 0 END) as stock_critico,
                       SUM(CASE WHEN Cantidad_Stock <= Stock_Minimo * 1.5 AND Cantidad_Stock > Stock_Minimo THEN 1 ELSE 0 END) as stock_bajo,
-                      SUM(Cantidad_Stock * Precio_Unitario) as valor_total_inventario,
-                      AVG(Precio_Unitario) as precio_promedio
+                      COALESCE(SUM(Cantidad_Stock * Precio_Unitario), 0) as valor_total_inventario,
+                      COALESCE(AVG(Precio_Unitario), 0) as precio_promedio
                     FROM TB_Inventario i";
     
     if (!empty($conditions)) {
@@ -105,6 +105,27 @@ try {
     }
     
     $stats = $stmt_stats->fetch(PDO::FETCH_ASSOC);
+    
+    // Asegurar que las estadísticas tengan valores por defecto
+    if (!$stats) {
+        $stats = [
+            'total_items' => 0,
+            'items_activos' => 0,
+            'stock_critico' => 0,
+            'stock_bajo' => 0,
+            'valor_total_inventario' => 0,
+            'precio_promedio' => 0
+        ];
+    } else {
+        $stats = array_merge([
+            'total_items' => 0,
+            'items_activos' => 0,
+            'stock_critico' => 0,
+            'stock_bajo' => 0,
+            'valor_total_inventario' => 0,
+            'precio_promedio' => 0
+        ], $stats);
+    }
     
     // Obtener categorías y proveedores para filtros
     $categorias = $db->query("SELECT ID_Categoria, Nombre_Categoria as Nombre FROM TB_Categorias ORDER BY Nombre_Categoria")->fetchAll(PDO::FETCH_ASSOC);

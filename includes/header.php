@@ -53,6 +53,16 @@
                                 <i class="fas fa-boxes"></i> Inventario
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="<?php echo SITE_URL; ?>/views/proveedores/index.php">
+                                <i class="fas fa-boxes"></i> Proveedores
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="<?php echo SITE_URL; ?>/views/categorias/index.php">
+                                <i class="fas fa-boxes"></i> Categorias
+                            </a>
+                        </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="reportesDropdown" role="button" data-bs-toggle="dropdown">
                                 <i class="fas fa-chart-bar"></i> Reportes

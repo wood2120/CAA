@@ -14,7 +14,7 @@ services:
       - DB_NAME=SistemaGestionEmpresa
       - DB_USER=root
       - DB_PASS=rootpassword
-      - SITE_URL=http://localhost:8080
+      - SITE_URL=https://caa-i0xf.onrender.com:8080
       - DEBUG_MODE=false
     depends_on:
       - db

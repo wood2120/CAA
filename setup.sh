@@ -42,7 +42,7 @@ echo "   - DB_USER (usuario MySQL)"
 echo "   - DB_PASS (contraseña MySQL)"
 echo
 echo "3. Ajustar URL del sitio en config/config.php:"
-echo "   - SITE_URL (ej: http://localhost/SistemaKris)"
+echo "   - SITE_URL (ej: https://caa-i0xf.onrender.com/SistemaKris)"
 echo
 echo "4. Configurar servidor web:"
 echo "   - Apache: Copiar a /var/www/html/"

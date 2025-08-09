@@ -21,8 +21,8 @@ docker build -t sistema-kris .
 
 ### 2. Acceso a los Servicios
 
-- **Aplicación Web**: http://localhost:8080
-- **phpMyAdmin**: http://localhost:8081
+- **Aplicación Web**: https://caa-i0xf.onrender.com:8080
+- **phpMyAdmin**: https://caa-i0xf.onrender.com:8081
 - **Base de Datos MySQL**: localhost:3307
 
 ### 3. Credenciales por Defecto

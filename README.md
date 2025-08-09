@@ -92,7 +92,7 @@ sudo chmod -R 755 /var/www/html/SistemaKris/
 
 1. **Ajustar configuraciones** en `config/config.php`:
    ```php
-   define('SITE_URL', 'http://localhost/SistemaKris');
+   define('SITE_URL', 'https://caa-i0xf.onrender.com/SistemaKris');
    define('DEBUG_MODE', false); // Cambiar a false en producción
    ```
 
@@ -104,7 +104,7 @@ sudo chmod -R 755 /var/www/html/SistemaKris/
 
 ### 4. Primer Acceso
 
-- **URL**: `http://localhost/SistemaKris/`
+- **URL**: `https://caa-i0xf.onrender.com/SistemaKris/`
 - **Usuario**: `admin`
 - **Contraseña**: `password`
 

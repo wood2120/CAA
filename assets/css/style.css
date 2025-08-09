@@ -1,0 +1,219 @@
+/* Custom styles for Sistema de Gestión Empresarial */
+
+:root {
+    --primary-color: #4e73df;
+    --secondary-color: #858796;
+    --success-color: #1cc88a;
+    --info-color: #36b9cc;
+    --warning-color: #f6c23e;
+    --danger-color: #e74a3b;
+    --light-color: #f8f9fc;
+    --dark-color: #5a5c69;
+}
+
+body {
+    font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    background-color: var(--light-color);
+}
+
+.navbar-brand {
+    font-weight: bold;
+}
+
+.card {
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15) !important;
+}
+
+.card-header {
+    background-color: #f8f9fc;
+    border-bottom: 1px solid #e3e6f0;
+}
+
+.btn {
+    border-radius: 0.35rem;
+    font-weight: 600;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: #3550c5;
+    border-color: #3550c5;
+}
+
+.table {
+    color: var(--dark-color);
+}
+
+.table th {
+    border-top: none;
+    border-bottom: 2px solid #e3e6f0;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    color: var(--secondary-color);
+}
+
+.table td {
+    border-top: 1px solid #e3e6f0;
+    vertical-align: middle;
+}
+
+.form-control {
+    border-radius: 0.35rem;
+    border: 1px solid #d1d3e2;
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+}
+
+.min-vh-100 {
+    min-height: 100vh;
+}
+
+.login-card {
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.dashboard-card {
+    transition: transform 0.2s;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-2px);
+}
+
+.alert {
+    border: none;
+    border-radius: 0.35rem;
+}
+
+.sidebar {
+    width: 6.5rem;
+    min-height: 100vh;
+    background: linear-gradient(180deg, #2e59d9 10%, #3f67d4 100%);
+}
+
+.sidebar.toggled {
+    width: 14rem;
+}
+
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 1rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .btn-block {
+        margin-bottom: 0.5rem;
+    }
+}
+
+.text-gray-800 {
+    color: #5a5c69 !important;
+}
+
+.text-gray-300 {
+    color: #dddfeb !important;
+}
+
+.font-weight-bold {
+    font-weight: 700 !important;
+}
+
+.text-xs {
+    font-size: 0.7rem;
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+.dataTables_wrapper {
+    font-size: 0.875rem;
+}
+
+.dataTables_filter input {
+    margin-left: 0.5em;
+    border-radius: 0.35rem;
+}
+
+.dataTables_length select {
+    border-radius: 0.35rem;
+}
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .container-fluid {
+        max-width: none !important;
+    }
+    
+    .card {
+        border: 1px solid #dee2e6 !important;
+        box-shadow: none !important;
+    }
+}
+
+.error-message {
+    color: var(--danger-color);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.success-message {
+    color: var(--success-color);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.custom-file-label::after {
+    content: "Buscar";
+}
+
+.pagination {
+    margin-bottom: 0;
+}
+
+.page-link {
+    border-radius: 0.35rem;
+    margin-left: 0.25rem;
+    margin-right: 0.25rem;
+}
+
+.badge {
+    font-weight: 600;
+    border-radius: 0.35rem;
+}
+
+::-webkit-scrollbar {
+    width: 0.5rem;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 0.35rem;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--secondary-color);
+    border-radius: 0.35rem;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--dark-color);
+}

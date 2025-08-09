@@ -148,8 +148,8 @@ try {
                 $trabajo['Fecha_Inicio'] ? date('d/m/Y', strtotime($trabajo['Fecha_Inicio'])) : 'No definida',
                 $trabajo['Fecha_Final'] ? date('d/m/Y', strtotime($trabajo['Fecha_Final'])) : 'No finalizado',
                 $trabajo['dias_duracion'],
-                number_format($trabajo['Precio_Mano_Obra'], 2),
-                number_format($trabajo['Precio_Total'], 2)
+                number_format($trabajo['Precio_Mano_Obra'] ?? 0, 2),
+                number_format($trabajo['Precio_Total'] ?? 0, 2)
             ]);
         }
         

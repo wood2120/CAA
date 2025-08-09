@@ -469,7 +469,7 @@ logActivity($_SESSION['user_id'], "Generó reporte de trabajos");
                                     </td>
                                     <td>
                                         <strong class="text-success">
-                                            $<?php echo number_format($trabajo['Precio_Total'], 2); ?>
+                                            $<?php echo number_format($trabajo['Precio_Total'] ?? 0, 2); ?>
                                         </strong>
                                     </td>
                                     <td>

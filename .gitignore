@@ -1,5 +1,7 @@
 # Archivos de configuración sensibles
 .env
+.env.local
+.env.production
 
 # Archivos temporales
 *.tmp
@@ -30,3 +32,16 @@ tmp/
 
 # Archivos de sistema
 .htaccess.local
+
+# Docker
+docker-compose.override.yml
+.docker/
+docker/data/
+
+# Uploads y reportes (opcional, comentar si quieres versionar)
+# uploads/
+# reports/
+
+# Base de datos backups
+*.sql.backup
+backup_*.sql

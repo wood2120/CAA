@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "8080:80"
+    volumes:
+      - ./reports:/var/www/html/reports
+      - ./uploads:/var/www/html/uploads
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=SistemaGestionEmpresa
+      - DB_USER=root
+      - DB_PASS=rootpassword
+      - SITE_URL=http://localhost:8080
+      - DEBUG_MODE=false
+    depends_on:
+      - db
+    networks:
+      - sistema-network
+
+  db:
+    image: mysql:8.0
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: SistemaGestionEmpresa
+      MYSQL_USER: sistema_user
+      MYSQL_PASSWORD: sistema_pass
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/migracion.sql:/docker-entrypoint-initdb.d/02-migracion.sql:ro
+    networks:
+      - sistema-network
+    command: --default-authentication-plugin=mysql_native_password
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: rootpassword
+    depends_on:
+      - db
+    networks:
+      - sistema-network
+
+volumes:
+  db_data:
+
+networks:
+  sistema-network:
+    driver: bridge

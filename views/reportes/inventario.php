@@ -248,7 +248,7 @@ logActivity($_SESSION['user_id'], "Generó reporte de inventario");
                                 Stock Crítico
                             </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                <?php echo number_format($stats['stock_critico']); ?>
+                                <?php echo number_format($stats['stock_critico'] ?? 0); ?>
                             </div>
                         </div>
                         <div class="col-auto">
@@ -268,7 +268,7 @@ logActivity($_SESSION['user_id'], "Generó reporte de inventario");
                                 Valor Total Inventario
                             </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                $<?php echo number_format($stats['valor_total_inventario'], 2); ?>
+                                $<?php echo number_format($stats['valor_total_inventario'] ?? 0, 2); ?>
                             </div>
                         </div>
                         <div class="col-auto">
@@ -288,7 +288,7 @@ logActivity($_SESSION['user_id'], "Generó reporte de inventario");
                                 Items Activos
                             </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                <?php echo number_format($stats['items_activos']); ?>
+                                <?php echo number_format($stats['items_activos'] ?? 0); ?>
                             </div>
                         </div>
                         <div class="col-auto">

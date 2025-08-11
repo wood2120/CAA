@@ -234,7 +234,7 @@ logActivity($_SESSION['user_id'], "Generó reporte de trabajos");
                                 Trabajos Completados
                             </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                <?php echo number_format($stats['completados']); ?>
+                                <?php echo number_format($stats['completados'] ?? 0); ?>
                             </div>
                         </div>
                         <div class="col-auto">

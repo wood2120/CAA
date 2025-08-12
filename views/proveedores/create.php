@@ -10,14 +10,9 @@ $success = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nombre_proveedor = sanitizeInput($_POST['nombre_proveedor']);
-    // Solo se persistirán las columnas que existen actualmente en TB_Proveedores
     $direccion = sanitizeInput($_POST['direccion']);
     $email = sanitizeInput($_POST['email']);
-    // Campos extra (rnc, telefono, contacto_principal, notas) NO existen en la tabla actual
-    $rnc = sanitizeInput($_POST['rnc']);
-    $telefono = sanitizeInput($_POST['telefono']);
-    $contacto_principal = sanitizeInput($_POST['contacto_principal']);
-    $notas = sanitizeInput($_POST['notas']);
+    $contacto = sanitizeInput($_POST['contacto']);
 
     if (empty($nombre_proveedor)) {
         $errors[] = 'El nombre del proveedor es obligatorio.';
@@ -25,13 +20,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $errors[] = 'El formato del correo electrónico no es válido.';
-    }
-    // Validaciones de campos extra opcionales (no se guardan todavía)
-    if (!empty($rnc) && !preg_match('/^\d{9}$/', $rnc)) {
-        $errors[] = 'El RNC se ignora (no existe la columna) pero debe tener 9 dígitos si lo desea usar en el futuro.';
-    }
-    if (!empty($telefono) && !preg_match('/^[\d\-\(\)\s\+]+$/', $telefono)) {
-        $errors[] = 'El teléfono se ignora (no existe la columna) pero su formato es inválido.';
     }
 
     if (empty($errors)) {
@@ -41,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $proveedorModel = new Proveedor($db);
 
             $proveedorModel->nombre_proveedor = $nombre_proveedor;
-            $proveedorModel->contacto = $contacto_principal ?: null; // Se mapea a Contacto
+            $proveedorModel->contacto = $contacto ?: null;
             $proveedorModel->email = $email;
             $proveedorModel->direccion = $direccion;
 
@@ -100,7 +88,7 @@ include '../../includes/header.php';
                 <div class="card-body">
                     <form method="POST" id="proveedorForm" novalidate>
                         <div class="row">
-                            <div class="col-md-8 mb-3">
+                            <div class="col-md-6 mb-3">
                                 <label for="nombre_proveedor" class="form-label">
                                     Nombre del Proveedor <span class="text-danger">*</span>
                                 </label>
@@ -108,55 +96,27 @@ include '../../includes/header.php';
                                        value="<?php echo isset($_POST['nombre_proveedor']) ? htmlspecialchars($_POST['nombre_proveedor']) : ''; ?>" 
                                        required maxlength="150" placeholder="Ej: Distribuidora ABC S.R.L.">
                             </div>
-
-                            <div class="col-md-4 mb-3">
-                                <label for="rnc" class="form-label">RNC (no se guarda)</label>
-                                <input type="text" class="form-control" id="rnc" name="rnc" 
-                                       value="<?php echo isset($_POST['rnc']) ? htmlspecialchars($_POST['rnc']) : ''; ?>" 
-                                       maxlength="9" pattern="\d{9}" placeholder="123456789">
-                                <div class="form-text text-warning">La tabla actual no tiene columna RNC</div>
+                            <div class="col-md-6 mb-3">
+                                <label for="contacto" class="form-label">Contacto</label>
+                                <input type="text" class="form-control" id="contacto" name="contacto" 
+                                       value="<?php echo isset($_POST['contacto']) ? htmlspecialchars($_POST['contacto']) : ''; ?>" 
+                                       maxlength="100" placeholder="Nombre de contacto o teléfono corto">
                             </div>
                         </div>
-
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="contacto_principal" class="form-label">Contacto Principal</label>
-                                <input type="text" class="form-control" id="contacto_principal" name="contacto_principal" 
-                                       value="<?php echo isset($_POST['contacto_principal']) ? htmlspecialchars($_POST['contacto_principal']) : ''; ?>" 
-                                       maxlength="100" placeholder="Nombre del contacto principal">
-                            </div>
-
-                            <div class="col-md-3 mb-3">
-                                <label for="telefono" class="form-label">Teléfono (no se guarda)</label>
-                                <input type="tel" class="form-control" id="telefono" name="telefono" 
-                                       value="<?php echo isset($_POST['telefono']) ? htmlspecialchars($_POST['telefono']) : ''; ?>" 
-                                       maxlength="20" placeholder="(809) 123-4567">
-                            </div>
-
-                            <div class="col-md-3 mb-3">
                                 <label for="email" class="form-label">Correo Electrónico</label>
                                 <input type="email" class="form-control" id="email" name="email" 
                                        value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>" 
                                        maxlength="100" placeholder="contacto@proveedor.com">
                             </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-12 mb-3">
+                            <div class="col-md-6 mb-3">
                                 <label for="direccion" class="form-label">Dirección</label>
                                 <textarea class="form-control" id="direccion" name="direccion" rows="3" 
                                           placeholder="Dirección completa del proveedor..."><?php echo isset($_POST['direccion']) ? htmlspecialchars($_POST['direccion']) : ''; ?></textarea>
                             </div>
                         </div>
-
-                        <div class="row">
-                            <div class="col-12 mb-3">
-                                <label for="notas" class="form-label">Notas (no se guardan)</label>
-                                <textarea class="form-control" id="notas" name="notas" rows="3" 
-                                          placeholder="(Requiere agregar columna Notas si desea persistir)"><?php echo isset($_POST['notas']) ? htmlspecialchars($_POST['notas']) : ''; ?></textarea>
-                                <div class="form-text text-warning">La tabla actual no tiene columna para notas</div>
-                            </div>
-                        </div>
+                        
 
                         <div class="row">
                             <div class="col-12">
@@ -164,10 +124,8 @@ include '../../includes/header.php';
                                     <h6><i class="fas fa-info-circle"></i> Información importante:</h6>
                                     <ul class="mb-0">
                                         <li>Solo el <strong>nombre del proveedor</strong> es obligatorio</li>
-                                        <li>La tabla actual solo guarda: Nombre, Contacto, Email, Dirección</li>
-                                        <li>Campos RNC, Teléfono, Notas NO se guardarán hasta ampliar el esquema</li>
-                                        <li>SQL sugerido para ampliar: <code>ALTER TABLE TB_Proveedores ADD RNC VARCHAR(20), ADD Telefono VARCHAR(30), ADD Notas TEXT, ADD Estado ENUM('Activo','Inactivo') DEFAULT 'Activo';</code></li>
-                                        <li>Puede agregar elementos de inventario después de crear el proveedor</li>
+                                        <li>La tabla actual guarda: Nombre, Contacto, Email y Dirección</li>
+                                        <li>Para agregar más campos en el futuro puede ampliar la tabla con un ALTER TABLE</li>
                                     </ul>
                                 </div>
                             </div>
@@ -204,17 +162,6 @@ document.addEventListener('DOMContentLoaded', function() {
             Utils.showAlert('Por favor, complete todos los campos requeridos.', 'warning');
             return false;
         }
-    });
-
-    document.getElementById('rnc').addEventListener('input', function(e) {
-        this.value = this.value.replace(/\D/g, '');
-        if (this.value.length > 9) {
-            this.value = this.value.substring(0, 9);
-        }
-    });
-
-    document.getElementById('telefono').addEventListener('input', function(e) {
-        this.value = this.value.replace(/[^\d\-\(\)\s\+]/g, '');
     });
 
     document.getElementById('nombre_proveedor').focus();

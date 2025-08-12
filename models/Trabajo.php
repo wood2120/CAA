@@ -56,11 +56,23 @@ class Trabajo {
         return false;
     }
 
-    public function readAll() {
-        $query = "SELECT t.*, c.Nombre as NombreCliente, c.Empresa as EmpresaCliente 
-                  FROM " . $this->table_name . " t 
-                  LEFT JOIN TB_Clientes c ON t.Cedula_Cliente = c.Cedula 
-                  ORDER BY t.Fecha_Creacion DESC";
+        public function readAll() {
+                // Se añaden alias consistentes usados en vistas (cliente_nombre y Precio)
+                $query = "SELECT 
+                                        t.ID_Trabajo,
+                                        t.Cedula_Cliente,
+                                        c.Nombre AS cliente_nombre,
+                                        c.Empresa AS cliente_empresa,
+                                        t.Tipo_Trabajo,
+                                        t.Precio_Mano_Obra,
+                                        t.Precio_Total AS Precio,
+                                        t.Estado,
+                                        t.Fecha_Inicio,
+                                        t.Fecha_Final,
+                                        t.Fecha_Creacion
+                                    FROM " . $this->table_name . " t 
+                                    LEFT JOIN TB_Clientes c ON t.Cedula_Cliente = c.Cedula 
+                                    ORDER BY t.Fecha_Creacion DESC";
 
         $stmt = $this->conn->prepare($query);
         $stmt->execute();

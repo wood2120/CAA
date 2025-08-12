@@ -119,11 +119,21 @@ logActivity($_SESSION['user_id'], "Acceso a gestión de trabajos");
                         <tr>
                             <td><?php echo htmlspecialchars($row['ID_Trabajo']); ?></td>
                             <td>
-                                <strong><?php echo htmlspecialchars($row['cliente_nombre'] ?? 'Cliente no encontrado'); ?></strong>
+                                <?php 
+                                    $nombreCliente = $row['cliente_nombre'] 
+                                        ?? $row['NombreCliente'] 
+                                        ?? 'Cliente no encontrado';
+                                ?>
+                                <strong><?php echo htmlspecialchars($nombreCliente); ?></strong>
+                                <?php if (!empty($row['Cedula_Cliente'])): ?>
                                 <br><small class="text-muted"><?php echo htmlspecialchars($row['Cedula_Cliente']); ?></small>
+                                <?php endif; ?>
                             </td>
                             <td><?php echo htmlspecialchars($row['Tipo_Trabajo']); ?></td>
-                            <td><strong><?php echo formatCurrency($row['Precio']); ?></strong></td>
+                            <td><strong><?php 
+                                $precio = $row['Precio'] ?? $row['Precio_Total'] ?? 0; 
+                                echo formatCurrency($precio); 
+                            ?></strong></td>
                             <td><?php echo formatDate($row['Fecha_Inicio']); ?></td>
                             <td><?php echo formatDate($row['Fecha_Final']); ?></td>
                             <td class="text-center no-print">

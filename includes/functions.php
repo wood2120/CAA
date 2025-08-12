@@ -53,7 +53,7 @@ function formatDate($date, $format = 'd/m/Y') {
 
 // Función para formatear moneda
 function formatCurrency($amount) {
-    return '₡' . number_format($amount, 2, '.', ',');
+    return '₡' . number_format($amount ?? 0, 2, '.', ',');
 }
 
 // Función para registrar en bitácora

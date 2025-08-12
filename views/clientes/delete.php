@@ -17,7 +17,7 @@ try {
     $db = $database->getConnection();
     $clienteModel = new Cliente($db);
     
-    $clienteModel->cedula = $cedula;
+    $clienteModel->Cedula = $cedula;
     
     if ($clienteModel->delete()) {
         logActivity($_SESSION['user_id'], "Cliente eliminado: Cédula {$cedula}");

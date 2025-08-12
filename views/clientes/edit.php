@@ -44,10 +44,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         }
         
-        $clienteModel->cedula = $nueva_cedula;
-        $clienteModel->nombre = sanitizeInput($_POST['nombre']);
-        $clienteModel->contacto = sanitizeInput($_POST['contacto']);
-        $clienteModel->empresa = sanitizeInput($_POST['empresa']);
+    $clienteModel->Cedula = $nueva_cedula;
+    $clienteModel->Nombre = sanitizeInput($_POST['nombre']);
+    $clienteModel->Contacto = sanitizeInput($_POST['contacto']);
+    $clienteModel->Empresa = sanitizeInput($_POST['empresa']);
         
         if ($clienteModel->update($cedula)) {
             logActivity($_SESSION['user_id'], "Cliente editado: " . $clienteModel->nombre);

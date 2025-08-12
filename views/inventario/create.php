@@ -18,6 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $cantidad_stock = sanitizeInput($_POST['cantidad_stock']);
     $stock_minimo = sanitizeInput($_POST['stock_minimo']);
     $precio_unitario = sanitizeInput($_POST['precio_unitario']); // Opcional
+    $valor_total = sanitizeInput($_POST['valor_total']); // Nuevo campo opcional para calcular precio unitario
     $unidad_medida = sanitizeInput($_POST['unidad_medida']);
 
     if (empty($nombre)) {
@@ -33,6 +34,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'El precio unitario debe ser numérico.';
     } elseif ($precio_unitario !== '' && $precio_unitario < 0) {
         $errors[] = 'El precio unitario no puede ser negativo.';
+    }
+
+    // Valor total opcional: si se da y no se dio precio se deriva
+    if ($valor_total !== '' && !is_numeric($valor_total)) {
+        $errors[] = 'El valor total debe ser numérico.';
+    } elseif ($valor_total !== '' && $valor_total < 0) {
+        $errors[] = 'El valor total no puede ser negativo.';
+    }
+    // Derivar precio si aplica
+    if ($valor_total !== '' && $precio_unitario === '') {
+        if ($cantidad_stock > 0) {
+            $precio_unitario = round($valor_total / $cantidad_stock, 2);
+        } else {
+            $errors[] = 'No se puede calcular el precio unitario desde el valor total si la cantidad inicial es 0.';
+        }
     }
 
     if ($cantidad_stock < 0) {
@@ -51,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $inventarioModel->id_proveedor = $id_proveedor ?: null;
             $inventarioModel->cantidad_stock = $cantidad_stock;
             $inventarioModel->stock_minimo = $stock_minimo ?: 5;
-            // Si el precio viene vacío, se almacena 0 por compatibilidad con cálculos
+            // Si el precio viene vacío, se almacena 0 por compatibilidad (caso sin valor total válido)
             $inventarioModel->precio_unitario = ($precio_unitario === '' ? 0 : $precio_unitario);
             $inventarioModel->unidad_medida = $unidad_medida ?: 'Unidad';
 
@@ -210,7 +226,7 @@ try {
                                 <div class="form-text">Alerta cuando el stock llegue a este nivel</div>
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label for="precio_unitario" class="form-label">
                                     Precio Unitario (opcional)
                                 </label>
@@ -221,6 +237,16 @@ try {
                                            min="0" step="0.01">
                                 </div>
                                 <div class="form-text">Si se deja vacío se asumirá 0</div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="valor_total" class="form-label">Valor Total (opcional)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₡</span>
+                                    <input type="number" class="form-control" id="valor_total" name="valor_total" 
+                                           value="<?php echo isset($_POST['valor_total']) ? htmlspecialchars($_POST['valor_total']) : ''; ?>" 
+                                           min="0" step="0.01">
+                                </div>
+                                <div class="form-text">Si no ingresa precio y coloca un valor total, se calculará precio unitario = valor_total / cantidad</div>
                             </div>
                         </div>
 

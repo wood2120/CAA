@@ -142,13 +142,13 @@ logActivity($_SESSION['user_id'], "Acceso a gestión de categorías");
                             <td><strong><?php echo formatCurrency($row['valor_total']); ?></strong></td>
                             <td class="text-center no-print">
                                 <div class="btn-group" role="group">
-                                    <a href="edit.php?id=<?php echo $row['ID_Categoria']; ?>" 
+                                    <a href="edit.php?id=<?php echo (int)$row['ID_Categoria']; ?>" 
                                        class="btn btn-sm btn-outline-warning" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     <?php if ($row['total_items'] == 0): ?>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" 
-                                            onclick="deleteCategoria('<?php echo $row['ID_Categoria']; ?>', '<?php echo htmlspecialchars($row['Nombre_Categoria']); ?>')" 
+                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                        onclick="deleteCategoria('<?php echo (int)$row['ID_Categoria']; ?>', '<?php echo htmlspecialchars($row['Nombre_Categoria']); ?>')" 
                                             title="Eliminar">
                                         <i class="fas fa-trash"></i>
                                     </button>

@@ -6,7 +6,7 @@ require_once '../../models/Inventario.php';
 requireLogin();
 checkSessionTimeout();
 
-$id_categoria = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$id_categoria = isset($_GET['id']) ? (int)$_GET['id'] : (isset($_POST['id_categoria']) ? (int)$_POST['id_categoria'] : 0);
 
 if ($id_categoria <= 0) {
     header('Location: index.php?error=invalid_id');
@@ -18,14 +18,30 @@ $db = $database->getConnection();
 $categoriaModel = new Categoria($db);
 $inventarioModel = new Inventario($db);
 
-$categoria = $categoriaModel->readOne($id_categoria);
+// Configurar id en el modelo y cargar
+$categoriaModel->id_categoria = $id_categoria;
+$found = $categoriaModel->readOne();
+$categoria = $found ? [
+    'nombre_categoria' => $categoriaModel->nombre_categoria,
+    'descripcion' => $categoriaModel->descripcion,
+    'tipo' => $categoriaModel->tipo,
+    'fecha_creacion' => date('Y-m-d H:i') // Placeholder si no existe campo en tabla
+] : null;
 
 if (!$categoria) {
     header('Location: index.php?error=not_found');
     exit();
 }
 
-$items_count = $inventarioModel->countByCategoria($id_categoria);
+// Contar items asociados de forma segura
+try {
+    $stmtCount = $db->prepare("SELECT COUNT(*) FROM TB_Inventario WHERE ID_Categoria = :id");
+    $stmtCount->bindParam(':id', $id_categoria);
+    $stmtCount->execute();
+    $items_count = (int)$stmtCount->fetchColumn();
+} catch (Exception $e) {
+    $items_count = 0;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_delete'])) {
     if ($items_count > 0) {
@@ -34,7 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_delete'])) {
     }
 
     try {
-        if ($categoriaModel->delete($id_categoria)) {
+    $categoriaModel->id_categoria = $id_categoria;
+    if ($categoriaModel->delete()) {
             logActivity($_SESSION['user_id'], "Categoría eliminada: {$categoria['nombre_categoria']} (ID: {$id_categoria})");
             header('Location: index.php?success=deleted');
             exit();

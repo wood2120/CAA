@@ -61,9 +61,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $inventarioModel->id_categoria = (int)$_POST['id_categoria'];
         $inventarioModel->id_proveedor = !empty($_POST['id_proveedor']) ? (int)$_POST['id_proveedor'] : null;
         $inventarioModel->stock_minimo = (int)$_POST['stock_minimo'];
-        // Precio opcional: si el campo llega vacío, conservar el existente
-        if (isset($_POST['precio_unitario']) && $_POST['precio_unitario'] !== '') {
-            $inventarioModel->precio_unitario = (float)$_POST['precio_unitario'];
+        // Manejo de precio y valor total opcional
+        $nuevoPrecio = isset($_POST['precio_unitario']) ? trim($_POST['precio_unitario']) : '';
+        $nuevoValorTotal = isset($_POST['valor_total']) ? trim($_POST['valor_total']) : '';
+        if ($nuevoValorTotal !== '' && $nuevoPrecio === '') {
+            // Derivar precio si se puede (usar nueva cantidad si se provee ajuste, si no stock actual)
+            $cantidadBase = $item['Cantidad_Stock'];
+            if (isset($_POST['nueva_cantidad']) && $_POST['nueva_cantidad'] !== '') {
+                $cantidadBase = (int)$_POST['nueva_cantidad'];
+            }
+            if ($cantidadBase > 0) {
+                $inventarioModel->precio_unitario = round(((float)$nuevoValorTotal) / $cantidadBase, 2);
+            } else {
+                // No se puede derivar, conservar existente
+                $inventarioModel->precio_unitario = $item['Precio_Unitario'];
+                $error = $error ?? 'No se pudo calcular el precio unitario desde el valor total porque la cantidad es 0.';
+            }
+        } elseif ($nuevoPrecio !== '') {
+            $inventarioModel->precio_unitario = (float)$nuevoPrecio;
         } else {
             $inventarioModel->precio_unitario = $item['Precio_Unitario'];
         }
@@ -236,6 +251,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         <option value="Activo" <?php echo ($item['Estado'] == 'Activo') ? 'selected' : ''; ?>>Activo</option>
                                         <option value="Inactivo" <?php echo ($item['Estado'] == 'Inactivo') ? 'selected' : ''; ?>>Inactivo</option>
                                     </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="valor_total" class="form-label"><i class="fas fa-calculator"></i> Valor Total (opcional)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₡</span>
+                                        <input type="number" class="form-control" id="valor_total" name="valor_total" min="0" step="0.01" placeholder="Ej: 150000">
+                                    </div>
+                                    <div class="form-text">Si deja precio vacío y pone un valor total, se calculará precio unitario = valor_total / cantidad.</div>
                                 </div>
                             </div>
                         </div>

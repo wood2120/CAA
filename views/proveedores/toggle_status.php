@@ -25,6 +25,10 @@ try {
 	}
 
 	$nuevoEstado = ($action === 'activate') ? 'Activo' : 'Inactivo';
+	if (!$proveedorModel->soportaEstado()) {
+		header('Location: index.php?error=not_supported');
+		exit();
+	}
 	if ($proveedorModel->toggleEstado($nuevoEstado)) {
 		logActivity($_SESSION['user_id'], "Proveedor {$action} ID: $id");
 		header('Location: index.php?success=' . ($action === 'activate' ? 'activated' : 'deactivated'));

@@ -17,16 +17,24 @@ class Proveedor {
     }
 
     public function create() {
-    $query = "INSERT INTO " . $this->table_name . " (Nombre_Proveedor, Contacto, Email, Direccion, Estado) 
-          VALUES (:nombre_proveedor, :contacto, :email, :direccion, :estado)";
+        $tieneEstado = $this->tieneColumnaEstado();
+        if ($tieneEstado) {
+            $query = "INSERT INTO " . $this->table_name . " (Nombre_Proveedor, Contacto, Email, Direccion, Estado) 
+                      VALUES (:nombre_proveedor, :contacto, :email, :direccion, :estado)";
+        } else {
+            $query = "INSERT INTO " . $this->table_name . " (Nombre_Proveedor, Contacto, Email, Direccion) 
+                      VALUES (:nombre_proveedor, :contacto, :email, :direccion)";
+        }
         $stmt = $this->conn->prepare($query);
 
         $stmt->bindParam(':nombre_proveedor', $this->nombre_proveedor);
         $stmt->bindParam(':contacto', $this->contacto);
         $stmt->bindParam(':email', $this->email);
         $stmt->bindParam(':direccion', $this->direccion);
-    $estado = $this->estado ?? 'Activo';
-    $stmt->bindParam(':estado', $estado);
+        if ($tieneEstado) {
+            $estado = $this->estado ?? 'Activo';
+            $stmt->bindParam(':estado', $estado);
+        }
 
         return $stmt->execute();
     }
@@ -105,16 +113,22 @@ class Proveedor {
     }
 
     public function getConEstadisticas() {
-                $query = "SELECT 
-                                        p.*, 
-                                        COALESCE(p.Estado,'Activo') as Estado,
-                                        COUNT(i.ID_Inventario) as total_items,
-                                        COALESCE(SUM(i.Cantidad_Stock), 0) as total_stock,
-                                        COALESCE(SUM(i.Cantidad_Stock * i.Precio_Unitario), 0) as valor_total
-                                    FROM " . $this->table_name . " p
-                                    LEFT JOIN TB_Inventario i ON p.ID_Proveedor = i.ID_Proveedor
-                                    GROUP BY p.ID_Proveedor
-                                    ORDER BY p.Nombre_Proveedor";
+        $tieneEstado = $this->tieneColumnaEstado();
+        $estadoSelect = $tieneEstado ? "COALESCE(p.Estado,'Activo') as Estado," : "'Activo' as Estado,";
+        $query = "SELECT 
+                    p.ID_Proveedor,
+                    p.Nombre_Proveedor,
+                    p.Contacto,
+                    p.Email,
+                    p.Direccion,
+                    $estadoSelect
+                    COUNT(i.ID_Inventario) as total_items,
+                    COALESCE(SUM(i.Cantidad_Stock), 0) as total_stock,
+                    COALESCE(SUM(i.Cantidad_Stock * i.Precio_Unitario), 0) as valor_total
+                  FROM " . $this->table_name . " p
+                  LEFT JOIN TB_Inventario i ON p.ID_Proveedor = i.ID_Proveedor
+                  GROUP BY p.ID_Proveedor
+                  ORDER BY p.Nombre_Proveedor";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt;
@@ -131,6 +145,9 @@ class Proveedor {
     }
 
     public function toggleEstado($nuevoEstado) {
+        if (!$this->tieneColumnaEstado()) {
+            return false; // No soportado sin columna
+        }
         $query = "UPDATE " . $this->table_name . " SET Estado = :estado WHERE ID_Proveedor = :id";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':estado', $nuevoEstado);
@@ -140,6 +157,23 @@ class Proveedor {
             return true;
         }
         return false;
+    }
+
+    private function tieneColumnaEstado() {
+        static $cache = null;
+        if ($cache !== null) return $cache;
+        try {
+            $stmt = $this->conn->query("SHOW COLUMNS FROM " . $this->table_name . " LIKE 'Estado'");
+            $cache = ($stmt && $stmt->rowCount() > 0);
+        } catch (Exception $e) {
+            $cache = false;
+        }
+        return $cache;
+    }
+
+    // Método público para que las vistas consulten si se soporta Estado
+    public function soportaEstado() {
+        return $this->tieneColumnaEstado();
     }
 }
 ?>

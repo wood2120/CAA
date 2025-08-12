@@ -8,6 +8,7 @@ checkSessionTimeout();
 $database = new Database();
 $db = $database->getConnection();
 $proveedorModel = new Proveedor($db);
+$soportaEstado = $proveedorModel->soportaEstado();
 
 $search = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
 $estado = isset($_GET['estado']) ? sanitizeInput($_GET['estado']) : '';
@@ -32,11 +33,18 @@ if (!empty($proveedores)) {
     error_log("Proveedor data structure: " . print_r($proveedores[0], true));
 }
 
-// Calculate statistics
+// Calculate statistics (si no hay columna Estado, se asume todo Activo)
+if ($soportaEstado) {
+    $activos = count(array_filter($proveedores, function($p) { return ($p['Estado'] ?? 'Activo') == 'Activo'; }));
+    $inactivos = count(array_filter($proveedores, function($p) { return ($p['Estado'] ?? 'Activo') == 'Inactivo'; }));
+} else {
+    $activos = count($proveedores);
+    $inactivos = 0;
+}
 $estadisticas = [
     'total' => count($proveedores),
-    'activos' => count(array_filter($proveedores, function($p) { return ($p['Estado'] ?? 'Activo') == 'Activo'; })),
-    'inactivos' => count(array_filter($proveedores, function($p) { return ($p['Estado'] ?? 'Activo') == 'Inactivo'; })),
+    'activos' => $activos,
+    'inactivos' => $inactivos,
     'con_elementos' => count(array_filter($proveedores, function($p) { return ($p['total_items'] ?? 0) > 0; }))
 ];
 
@@ -93,6 +101,9 @@ include '../../includes/header.php';
                     break;
                 case 'has_items':
                     echo 'No se puede eliminar el proveedor porque tiene elementos de inventario asociados.';
+                    break;
+                case 'not_supported':
+                    echo 'Esta instalación no soporta activar/desactivar proveedores (falta columna Estado).';
                     break;
                 default:
                     echo 'Se produjo un error inesperado.';

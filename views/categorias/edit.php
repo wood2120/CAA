@@ -16,9 +16,9 @@ $database = new Database();
 $db = $database->getConnection();
 $categoriaModel = new Categoria($db);
 
-$categoria = $categoriaModel->readOne($id_categoria);
-
-if (!$categoria) {
+// Establecer el ID en el modelo y cargar sus datos
+$categoriaModel->id_categoria = $id_categoria;
+if (!$categoriaModel->readOne()) {
     header('Location: index.php?error=not_found');
     exit();
 }
@@ -41,12 +41,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         try {
-            $categoriaModel->id_categoria = $id_categoria;
+            $categoriaModel->id_categoria = $id_categoria; // redundante pero explícito
             $categoriaModel->nombre_categoria = $nombre_categoria;
             $categoriaModel->descripcion = $descripcion;
             $categoriaModel->tipo = $tipo;
 
-            if ($categoriaModel->existsExcept($id_categoria)) {
+            // Verificar duplicados usando método exists() existente
+            if ($categoriaModel->exists()) {
                 $errors[] = 'Ya existe otra categoría con ese nombre.';
             } else {
                 if ($categoriaModel->update()) {
@@ -97,8 +98,8 @@ include '../../includes/header.php';
             <div class="card shadow">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 font-weight-bold text-primary">Editar Información de la Categoría</h6>
-                    <span class="badge badge-<?php echo $categoria['tipo'] == 'Material' ? 'success' : 'info'; ?>">
-                        <?php echo htmlspecialchars($categoria['tipo']); ?>
+                    <span class="badge badge-<?php echo $categoriaModel->tipo == 'Material' ? 'success' : 'info'; ?>">
+                        <?php echo htmlspecialchars($categoriaModel->tipo); ?>
                     </span>
                 </div>
                 <div class="card-body">
@@ -108,8 +109,8 @@ include '../../includes/header.php';
                                 <label for="nombre_categoria" class="form-label">
                                     Nombre de la Categoría <span class="text-danger">*</span>
                                 </label>
-                                <input type="text" class="form-control" id="nombre_categoria" name="nombre_categoria" 
-                                       value="<?php echo isset($_POST['nombre_categoria']) ? htmlspecialchars($_POST['nombre_categoria']) : htmlspecialchars($categoria['nombre_categoria']); ?>" 
+                    <input type="text" class="form-control" id="nombre_categoria" name="nombre_categoria" 
+                        value="<?php echo isset($_POST['nombre_categoria']) ? htmlspecialchars($_POST['nombre_categoria']) : htmlspecialchars($categoriaModel->nombre_categoria); ?>" 
                                        required maxlength="100" placeholder="Ej: Herramientas Eléctricas">
                             </div>
 
@@ -120,7 +121,7 @@ include '../../includes/header.php';
                                 <select class="form-control" id="tipo" name="tipo">
                                     <option value="">(Auto: Material)</option>
                                     <?php 
-                                    $tipo_actual = isset($_POST['tipo']) ? $_POST['tipo'] : $categoria['tipo'];
+                                    $tipo_actual = isset($_POST['tipo']) ? $_POST['tipo'] : $categoriaModel->tipo;
                                     ?>
                                     <option value="Material" <?php echo $tipo_actual == 'Material' ? 'selected' : ''; ?>>
                                         Material
@@ -136,27 +137,12 @@ include '../../includes/header.php';
                             <div class="col-12 mb-3">
                                 <label for="descripcion" class="form-label">Descripción</label>
                                 <textarea class="form-control" id="descripcion" name="descripcion" rows="4" 
-                                          placeholder="Descripción detallada de la categoría..."><?php echo isset($_POST['descripcion']) ? htmlspecialchars($_POST['descripcion']) : htmlspecialchars($categoria['descripcion']); ?></textarea>
+                                          placeholder="Descripción detallada de la categoría..."><?php echo isset($_POST['descripcion']) ? htmlspecialchars($_POST['descripcion']) : htmlspecialchars($categoriaModel->descripcion); ?></textarea>
                                 <div class="form-text">Opcional: Describe qué tipo de elementos incluye esta categoría</div>
                             </div>
                         </div>
 
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="alert alert-secondary">
-                                    <h6><i class="fas fa-info-circle"></i> Información de la categoría:</h6>
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <strong>Creada:</strong> <?php echo date('d/m/Y H:i', strtotime($categoria['fecha_creacion'])); ?>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <strong>Última actualización:</strong> 
-                                            <?php echo $categoria['fecha_actualizacion'] ? date('d/m/Y H:i', strtotime($categoria['fecha_actualizacion'])) : 'Nunca'; ?>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Información de fechas eliminada porque no existe en el modelo/tabla actual -->
 
                         <div class="row">
                             <div class="col-12">
@@ -187,9 +173,9 @@ include '../../includes/header.php';
 
 <script>
 const originalData = {
-    nombre_categoria: <?php echo json_encode($categoria['nombre_categoria']); ?>,
-    descripcion: <?php echo json_encode($categoria['descripcion']); ?>,
-    tipo: <?php echo json_encode($categoria['tipo']); ?>
+    nombre_categoria: <?php echo json_encode($categoriaModel->nombre_categoria); ?>,
+    descripcion: <?php echo json_encode($categoriaModel->descripcion); ?>,
+    tipo: <?php echo json_encode($categoriaModel->tipo); ?>
 };
 
 document.addEventListener('DOMContentLoaded', function() {

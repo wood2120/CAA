@@ -174,6 +174,7 @@ include '../../includes/header.php';
 
                     <?php else: ?>
                     <form method="POST" id="deleteForm">
+                        <input type="hidden" name="id_categoria" value="<?php echo $id_categoria; ?>">
                         <div class="form-check mb-3">
                             <input class="form-check-input" type="checkbox" id="confirmCheck" required>
                             <label class="form-check-label" for="confirmCheck">

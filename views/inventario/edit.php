@@ -24,11 +24,25 @@ try {
     $proveedorModel = new Proveedor($db);
     
     // Obtener datos del item
-    $item = $inventarioModel->readOne($id);
-    
-    if (!$item) {
+    $inventarioModel->id_inventario = $id;
+    $itemFound = $inventarioModel->readOne();
+    if (!$itemFound) {
         throw new Exception("Item no encontrado");
     }
+    // Map properties to $item array for template compatibility
+    $item = [
+        'ID_Inventario' => $id,
+        'Nombre' => $inventarioModel->nombre,
+        'Descripcion' => $inventarioModel->descripcion,
+        'ID_Categoria' => $inventarioModel->id_categoria,
+        'ID_Proveedor' => $inventarioModel->id_proveedor,
+        'Cantidad_Stock' => $inventarioModel->cantidad_stock,
+        'Stock_Minimo' => $inventarioModel->stock_minimo,
+        'Precio_Unitario' => $inventarioModel->precio_unitario,
+        'Unidad_Medida' => $inventarioModel->unidad_medida,
+        'Fecha_Ingreso' => $inventarioModel->fecha_ingreso,
+        'Estado' => $inventarioModel->estado
+    ];
     
     // Obtener categorías y proveedores para los selects
     $categorias = $categoriaModel->readAll();

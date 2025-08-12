@@ -5,12 +5,16 @@ require_once '../../models/Inventario.php';
 requireLogin();
 checkSessionTimeout();
 
-if (!isset($_GET['id'])) {
+
+// Permitir eliminación por POST (desde el formulario JS) o por GET (enlace directo)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_inventario'])) {
+    $id = (int)$_POST['id_inventario'];
+} elseif (isset($_GET['id'])) {
+    $id = (int)$_GET['id'];
+} else {
     header("Location: index.php");
     exit();
 }
-
-$id = (int)$_GET['id'];
 
 try {
     $database = new Database();

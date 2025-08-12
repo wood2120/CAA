@@ -61,7 +61,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $inventarioModel->id_categoria = (int)$_POST['id_categoria'];
         $inventarioModel->id_proveedor = !empty($_POST['id_proveedor']) ? (int)$_POST['id_proveedor'] : null;
         $inventarioModel->stock_minimo = (int)$_POST['stock_minimo'];
-        $inventarioModel->precio_unitario = (float)$_POST['precio_unitario'];
+        // Precio opcional: si el campo llega vacío, conservar el existente
+        if (isset($_POST['precio_unitario']) && $_POST['precio_unitario'] !== '') {
+            $inventarioModel->precio_unitario = (float)$_POST['precio_unitario'];
+        } else {
+            $inventarioModel->precio_unitario = $item['Precio_Unitario'];
+        }
         $inventarioModel->unidad_medida = sanitizeInput($_POST['unidad_medida']);
         $inventarioModel->estado = sanitizeInput($_POST['estado']);
         
@@ -214,10 +219,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     <label for="precio_unitario" class="form-label">
-                                        <i class="fas fa-dollar-sign"></i> Precio Unitario <span class="text-danger">*</span>
+                                        <i class="fas fa-dollar-sign"></i> Precio Unitario (opcional)
                                     </label>
                                     <input type="number" class="form-control" id="precio_unitario" name="precio_unitario" 
-                                           required min="0" step="0.01" value="<?php echo $item['Precio_Unitario']; ?>">
+                                           min="0" step="0.01" value="<?php echo $item['Precio_Unitario']; ?>">
+                                    <div class="form-text">Dejar vacío para mantener el valor actual</div>
                                 </div>
                             </div>
                             

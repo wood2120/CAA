@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id_proveedor = sanitizeInput($_POST['id_proveedor']);
     $cantidad_stock = sanitizeInput($_POST['cantidad_stock']);
     $stock_minimo = sanitizeInput($_POST['stock_minimo']);
-    $precio_unitario = sanitizeInput($_POST['precio_unitario']);
+    $precio_unitario = sanitizeInput($_POST['precio_unitario']); // Opcional
     $unidad_medida = sanitizeInput($_POST['unidad_medida']);
 
     if (empty($nombre)) {
@@ -28,8 +28,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'La categoría es obligatoria.';
     }
 
-    if (empty($precio_unitario) || $precio_unitario <= 0) {
-        $errors[] = 'El precio unitario debe ser mayor a 0.';
+    // Precio opcional: solo validar si viene informado
+    if ($precio_unitario !== '' && !is_numeric($precio_unitario)) {
+        $errors[] = 'El precio unitario debe ser numérico.';
+    } elseif ($precio_unitario !== '' && $precio_unitario < 0) {
+        $errors[] = 'El precio unitario no puede ser negativo.';
     }
 
     if ($cantidad_stock < 0) {
@@ -48,7 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $inventarioModel->id_proveedor = $id_proveedor ?: null;
             $inventarioModel->cantidad_stock = $cantidad_stock;
             $inventarioModel->stock_minimo = $stock_minimo ?: 5;
-            $inventarioModel->precio_unitario = $precio_unitario;
+            // Si el precio viene vacío, se almacena 0 por compatibilidad con cálculos
+            $inventarioModel->precio_unitario = ($precio_unitario === '' ? 0 : $precio_unitario);
             $inventarioModel->unidad_medida = $unidad_medida ?: 'Unidad';
 
             if ($inventarioModel->exists()) {
@@ -208,14 +212,15 @@ try {
 
                             <div class="col-md-4 mb-3">
                                 <label for="precio_unitario" class="form-label">
-                                    Precio Unitario <span class="text-danger">*</span>
+                                    Precio Unitario (opcional)
                                 </label>
                                 <div class="input-group">
                                     <span class="input-group-text">₡</span>
                                     <input type="number" class="form-control" id="precio_unitario" name="precio_unitario" 
                                            value="<?php echo isset($_POST['precio_unitario']) ? htmlspecialchars($_POST['precio_unitario']) : ''; ?>" 
-                                           min="0" step="0.01" required>
+                                           min="0" step="0.01">
                                 </div>
+                                <div class="form-text">Si se deja vacío se asumirá 0</div>
                             </div>
                         </div>
 

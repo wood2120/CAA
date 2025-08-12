@@ -5,12 +5,12 @@ require_once '../../models/Trabajo.php';
 requireLogin();
 checkSessionTimeout();
 
-if (!isset($_GET['id'])) {
+// Aceptar ID por GET (links de confirmación) o POST (botón eliminar desde listado)
+$id = (int)($_GET['id'] ?? $_POST['id_trabajo'] ?? 0);
+if ($id <= 0) {
     header("Location: index.php");
     exit();
 }
-
-$id = (int)$_GET['id'];
 
 try {
     $database = new Database();
@@ -28,7 +28,8 @@ try {
     $stmtCheck = $db->prepare($queryCheck);
     $stmtCheck->bindParam(':id', $id);
     $stmtCheck->execute();
-    $tieneMateriales = $stmtCheck->fetch(PDO::FETCH_ASSOC)['total'] > 0;
+    $rowCountMat = (int)$stmtCheck->fetch(PDO::FETCH_ASSOC)['total'];
+    $tieneMateriales = $rowCountMat > 0;
     
     // Confirmar eliminación si es necesario
     if ($tieneMateriales && !isset($_GET['confirm'])) {
@@ -59,7 +60,7 @@ try {
                         <hr>
                         <p><strong>ID:</strong> <?php echo $trabajo['ID_Trabajo']; ?></p>
                         <p><strong>Tipo:</strong> <?php echo htmlspecialchars($trabajo['Tipo_Trabajo']); ?></p>
-                        <p><strong>Cliente:</strong> <?php echo htmlspecialchars($trabajo['cliente_nombre'] ?? 'Sin cliente'); ?></p>
+                        <p><strong>Cliente:</strong> <?php echo htmlspecialchars($trabajo['cliente_nombre'] ?? $trabajo['NombreCliente'] ?? 'Sin cliente'); ?></p>
                         <p><strong>Estado:</strong> <?php echo htmlspecialchars($trabajo['Estado']); ?></p>
                         <p><strong>Precio Total:</strong> <?php echo formatCurrency($trabajo['Precio_Total']); ?></p>
                     </div>
@@ -67,7 +68,7 @@ try {
                     <div class="alert alert-danger">
                         <h6><i class="fas fa-warning"></i> Consecuencias de la eliminación:</h6>
                         <ul>
-                            <li>Se eliminarán <strong><?php echo $tieneMateriales; ?> registros</strong> de materiales/herramientas asociados</li>
+                            <li>Se eliminarán <strong><?php echo $rowCountMat; ?> registros</strong> de materiales/herramientas asociados</li>
                             <li>Se crearán movimientos de inventario para devolver el stock (si aplicable)</li>
                             <li>Esta acción <strong>NO SE PUEDE DESHACER</strong></li>
                         </ul>
@@ -137,7 +138,8 @@ try {
     }
     
     // Proceder con la eliminación
-    $trabajoModel->id_trabajo = $id;
+    // Usar la propiedad correcta definida en el modelo
+    $trabajoModel->ID_Trabajo = $id;
     
     if ($trabajoModel->delete()) {
         logActivity($_SESSION['user_id'], "Trabajo eliminado ID: $id - " . $trabajo['Tipo_Trabajo']);

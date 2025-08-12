@@ -20,11 +20,19 @@ try {
     $proveedorModel = new Proveedor($db);
     
     // Obtener datos del proveedor
-    $proveedor = $proveedorModel->readOne($id);
-    
-    if (!$proveedor) {
+    $proveedorModel->id_proveedor = $id;
+    if (!$proveedorModel->readOne()) {
         throw new Exception("Proveedor no encontrado");
     }
+    // Construimos array para facilitar el código existente
+    $proveedor = [
+        'ID_Proveedor'     => $id,
+        'Nombre_Proveedor' => $proveedorModel->nombre_proveedor,
+        'Contacto'         => $proveedorModel->contacto,
+        'Email'            => $proveedorModel->email,
+        'Direccion'        => $proveedorModel->direccion,
+        'Estado'           => $proveedorModel->estado ?? 'Activo'
+    ];
     
 } catch (Exception $e) {
     header("Location: index.php?error=" . urlencode($e->getMessage()));
@@ -147,6 +155,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <p><strong>Nombre:</strong> <?php echo htmlspecialchars($proveedor['Nombre_Proveedor']); ?></p>
                     <p><strong>Contacto:</strong> <?php echo htmlspecialchars($proveedor['Contacto'] ?? 'No especificado'); ?></p>
                     <p><strong>Email:</strong> <?php echo htmlspecialchars($proveedor['Email'] ?? 'No especificado'); ?></p>
+                    <p><strong>Estado:</strong> 
+                        <span class="badge badge-<?php echo ($proveedor['Estado'] == 'Activo') ? 'success' : 'secondary'; ?>">
+                            <?php echo htmlspecialchars($proveedor['Estado']); ?>
+                        </span>
+                    </p>
                 </div>
             </div>
 

@@ -10,20 +10,23 @@ class Proveedor {
     public $contacto;
     public $email;
     public $direccion;
+    public $estado; // Estado (Activo/Inactivo)
 
     public function __construct($db) {
         $this->conn = $db;
     }
 
     public function create() {
-        $query = "INSERT INTO " . $this->table_name . " (Nombre_Proveedor, Contacto, Email, Direccion) 
-                  VALUES (:nombre_proveedor, :contacto, :email, :direccion)";
+    $query = "INSERT INTO " . $this->table_name . " (Nombre_Proveedor, Contacto, Email, Direccion, Estado) 
+          VALUES (:nombre_proveedor, :contacto, :email, :direccion, :estado)";
         $stmt = $this->conn->prepare($query);
 
         $stmt->bindParam(':nombre_proveedor', $this->nombre_proveedor);
         $stmt->bindParam(':contacto', $this->contacto);
         $stmt->bindParam(':email', $this->email);
         $stmt->bindParam(':direccion', $this->direccion);
+    $estado = $this->estado ?? 'Activo';
+    $stmt->bindParam(':estado', $estado);
 
         return $stmt->execute();
     }
@@ -36,7 +39,7 @@ class Proveedor {
     }
 
     public function readOne() {
-        $query = "SELECT * FROM " . $this->table_name . " WHERE ID_Proveedor = :id";
+    $query = "SELECT * FROM " . $this->table_name . " WHERE ID_Proveedor = :id";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $this->id_proveedor);
         $stmt->execute();
@@ -47,18 +50,19 @@ class Proveedor {
             $this->contacto = $row['Contacto'];
             $this->email = $row['Email'];
             $this->direccion = $row['Direccion'];
+            $this->estado = $row['Estado'] ?? 'Activo';
             return true;
         }
         return false;
     }
 
     public function update() {
-        $query = "UPDATE " . $this->table_name . " SET 
-                  Nombre_Proveedor = :nombre_proveedor,
-                  Contacto = :contacto,
-                  Email = :email,
-                  Direccion = :direccion
-                  WHERE ID_Proveedor = :id";
+    $query = "UPDATE " . $this->table_name . " SET 
+          Nombre_Proveedor = :nombre_proveedor,
+          Contacto = :contacto,
+          Email = :email,
+          Direccion = :direccion
+          WHERE ID_Proveedor = :id";
         $stmt = $this->conn->prepare($query);
 
         $stmt->bindParam(':nombre_proveedor', $this->nombre_proveedor);
@@ -101,15 +105,16 @@ class Proveedor {
     }
 
     public function getConEstadisticas() {
-        $query = "SELECT 
-                    p.*,
-                    COUNT(i.ID_Inventario) as total_items,
-                    COALESCE(SUM(i.Cantidad_Stock), 0) as total_stock,
-                    COALESCE(SUM(i.Cantidad_Stock * i.Precio_Unitario), 0) as valor_total
-                  FROM " . $this->table_name . " p
-                  LEFT JOIN TB_Inventario i ON p.ID_Proveedor = i.ID_Proveedor
-                  GROUP BY p.ID_Proveedor
-                  ORDER BY p.Nombre_Proveedor";
+                $query = "SELECT 
+                                        p.*, 
+                                        COALESCE(p.Estado,'Activo') as Estado,
+                                        COUNT(i.ID_Inventario) as total_items,
+                                        COALESCE(SUM(i.Cantidad_Stock), 0) as total_stock,
+                                        COALESCE(SUM(i.Cantidad_Stock * i.Precio_Unitario), 0) as valor_total
+                                    FROM " . $this->table_name . " p
+                                    LEFT JOIN TB_Inventario i ON p.ID_Proveedor = i.ID_Proveedor
+                                    GROUP BY p.ID_Proveedor
+                                    ORDER BY p.Nombre_Proveedor";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt;
@@ -123,6 +128,18 @@ class Proveedor {
         $stmt->bindParam(':id_proveedor', $this->id_proveedor);
         $stmt->execute();
         return $stmt;
+    }
+
+    public function toggleEstado($nuevoEstado) {
+        $query = "UPDATE " . $this->table_name . " SET Estado = :estado WHERE ID_Proveedor = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':estado', $nuevoEstado);
+        $stmt->bindParam(':id', $this->id_proveedor);
+        if ($stmt->execute()) {
+            $this->estado = $nuevoEstado;
+            return true;
+        }
+        return false;
     }
 }
 ?>

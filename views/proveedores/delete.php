@@ -5,12 +5,12 @@ require_once '../../models/Proveedor.php';
 requireLogin();
 checkSessionTimeout();
 
-if (!isset($_GET['id'])) {
-    header("Location: index.php");
+// ID por GET (link) o POST (formulario)
+$id = (int)($_GET['id'] ?? $_POST['id_proveedor'] ?? 0);
+if ($id <= 0) {
+    header("Location: index.php?error=invalid_id");
     exit();
 }
-
-$id = (int)$_GET['id'];
 
 try {
     $database = new Database();
@@ -18,10 +18,14 @@ try {
     $proveedorModel = new Proveedor($db);
     
     // Verificar que el proveedor existe
-    $proveedor = $proveedorModel->readOne($id);
-    if (!$proveedor) {
+    $proveedorModel->id_proveedor = $id;
+    if (!$proveedorModel->readOne()) {
         throw new Exception("Proveedor no encontrado");
     }
+    // Necesitamos datos para log (nombre)
+    $proveedor = [
+        'Nombre_Proveedor' => $proveedorModel->nombre_proveedor
+    ];
     
     // Verificar si el proveedor tiene items en inventario
     $queryCheck = "SELECT COUNT(*) as total FROM TB_Inventario WHERE ID_Proveedor = :id";
@@ -35,8 +39,6 @@ try {
         header("Location: index.php?error=" . urlencode("No se puede eliminar el proveedor porque tiene items asociados en el inventario"));
         exit();
     }
-    
-    $proveedorModel->id_proveedor = $id;
     
     if ($proveedorModel->delete()) {
         logActivity($_SESSION['user_id'], "Proveedor eliminado: " . $proveedor['Nombre_Proveedor']);

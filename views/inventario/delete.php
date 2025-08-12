@@ -21,11 +21,15 @@ try {
     $db = $database->getConnection();
     $inventarioModel = new Inventario($db);
     
-    // Verificar que el item existe
-    $item = $inventarioModel->readOne($id);
-    if (!$item) {
+    // Verificar que el item existe usando el modelo (readOne sin parámetros)
+    $inventarioModel->id_inventario = $id;
+    if (!$inventarioModel->readOne()) {
         throw new Exception("Item no encontrado");
     }
+    // Construir array para usar el nombre fácilmente
+    $item = [
+        'Nombre' => $inventarioModel->nombre
+    ];
     
     // Verificar si el item ha sido usado en trabajos
     $queryCheck = "SELECT COUNT(*) as total FROM TB_Trabajo_Inventario WHERE ID_Inventario = :id";

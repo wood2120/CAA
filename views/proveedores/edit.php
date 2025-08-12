@@ -25,12 +25,13 @@ try {
         throw new Exception("Proveedor no encontrado");
     }
     // Construimos array para facilitar el código existente
+    // Normalizamos a string vacío para evitar deprecations al usar htmlspecialchars con null
     $proveedor = [
         'ID_Proveedor'     => $id,
-        'Nombre_Proveedor' => $proveedorModel->nombre_proveedor,
-        'Contacto'         => $proveedorModel->contacto,
-        'Email'            => $proveedorModel->email,
-        'Direccion'        => $proveedorModel->direccion,
+        'Nombre_Proveedor' => $proveedorModel->nombre_proveedor ?? '',
+        'Contacto'         => $proveedorModel->contacto ?? '',
+        'Email'            => $proveedorModel->email ?? '',
+        'Direccion'        => $proveedorModel->direccion ?? '',
         'Estado'           => $proveedorModel->estado ?? 'Activo'
     ];
     
@@ -103,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     </label>
                                     <input type="text" class="form-control" id="contacto" name="contacto" 
                                            maxlength="100" 
-                                           value="<?php echo htmlspecialchars($proveedor['Contacto']); ?>">
+                                           value="<?php echo htmlspecialchars($proveedor['Contacto'] ?? ''); ?>">
                                     <div class="form-text">Formato: 2222-3333 o 8888-7777</div>
                                 </div>
                             </div>
@@ -117,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     </label>
                                     <input type="email" class="form-control" id="email" name="email" 
                                            maxlength="100" 
-                                           value="<?php echo htmlspecialchars($proveedor['Email']); ?>">
+                                           value="<?php echo htmlspecialchars($proveedor['Email'] ?? ''); ?>">
                                 </div>
                             </div>
                             
@@ -127,7 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         <i class="fas fa-map-marker-alt"></i> Dirección
                                     </label>
                                     <textarea class="form-control" id="direccion" name="direccion" 
-                                              rows="3"><?php echo htmlspecialchars($proveedor['Direccion']); ?></textarea>
+                                              rows="3"><?php echo htmlspecialchars($proveedor['Direccion'] ?? ''); ?></textarea>
                                 </div>
                             </div>
                         </div>

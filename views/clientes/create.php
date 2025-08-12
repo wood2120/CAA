@@ -34,17 +34,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db = $database->getConnection();
             $clienteModel = new Cliente($db);
 
-            $clienteModel->cedula = $cedula;
-            $clienteModel->nombre = $nombre;
-            $clienteModel->contacto = $contacto;
-            $clienteModel->empresa = $empresa;
+            $clienteModel->Cedula = $cedula;
+            $clienteModel->Nombre = $nombre;
+            $clienteModel->Contacto = $contacto;
+            $clienteModel->Empresa = $empresa;
 
-            if ($clienteModel->exists()) {
+            if ($clienteModel->exists($cedula)) {
                 $errors[] = 'Ya existe un cliente con esa cédula.';
             } else {
                 if ($clienteModel->create()) {
                     logActivity($_SESSION['user_id'], "Cliente creado: {$nombre} (Cédula: {$cedula})");
-                    
                     header('Location: index.php?success=created');
                     exit();
                 } else {

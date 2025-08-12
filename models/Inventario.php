@@ -1,11 +1,3 @@
-    // Actualiza solo el estado del item
-    public function updateEstado() {
-        $query = "UPDATE " . $this->table_name . " SET Estado = :estado WHERE ID_Inventario = :id";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':estado', $this->estado);
-        $stmt->bindParam(':id', $this->id_inventario);
-        return $stmt->execute();
-    }
 <?php
 // No incluir database.php aquí para evitar problemas de ruta
 
@@ -27,6 +19,15 @@ class Inventario {
 
     public function __construct($db) {
         $this->conn = $db;
+    }
+
+    // Actualiza solo el estado del item
+    public function updateEstado() {
+        $query = "UPDATE " . $this->table_name . " SET Estado = :estado WHERE ID_Inventario = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':estado', $this->estado);
+        $stmt->bindParam(':id', $this->id_inventario);
+        return $stmt->execute();
     }
 
     public function create() {

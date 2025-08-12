@@ -10,10 +10,12 @@ $success = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nombre_proveedor = sanitizeInput($_POST['nombre_proveedor']);
-    $rnc = sanitizeInput($_POST['rnc']);
+    // Solo se persistirán las columnas que existen actualmente en TB_Proveedores
     $direccion = sanitizeInput($_POST['direccion']);
-    $telefono = sanitizeInput($_POST['telefono']);
     $email = sanitizeInput($_POST['email']);
+    // Campos extra (rnc, telefono, contacto_principal, notas) NO existen en la tabla actual
+    $rnc = sanitizeInput($_POST['rnc']);
+    $telefono = sanitizeInput($_POST['telefono']);
     $contacto_principal = sanitizeInput($_POST['contacto_principal']);
     $notas = sanitizeInput($_POST['notas']);
 
@@ -21,16 +23,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'El nombre del proveedor es obligatorio.';
     }
 
-    if (!empty($rnc) && !preg_match('/^\d{9}$/', $rnc)) {
-        $errors[] = 'El RNC debe tener exactamente 9 dígitos.';
-    }
-
     if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $errors[] = 'El formato del correo electrónico no es válido.';
     }
-
+    // Validaciones de campos extra opcionales (no se guardan todavía)
+    if (!empty($rnc) && !preg_match('/^\d{9}$/', $rnc)) {
+        $errors[] = 'El RNC se ignora (no existe la columna) pero debe tener 9 dígitos si lo desea usar en el futuro.';
+    }
     if (!empty($telefono) && !preg_match('/^[\d\-\(\)\s\+]+$/', $telefono)) {
-        $errors[] = 'El formato del teléfono no es válido.';
+        $errors[] = 'El teléfono se ignora (no existe la columna) pero su formato es inválido.';
     }
 
     if (empty($errors)) {
@@ -40,15 +41,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $proveedorModel = new Proveedor($db);
 
             $proveedorModel->nombre_proveedor = $nombre_proveedor;
-            $proveedorModel->rnc = $rnc;
-            $proveedorModel->direccion = $direccion;
-            $proveedorModel->telefono = $telefono;
+            $proveedorModel->contacto = $contacto_principal ?: null; // Se mapea a Contacto
             $proveedorModel->email = $email;
-            $proveedorModel->contacto_principal = $contacto_principal;
-            $proveedorModel->notas = $notas;
+            $proveedorModel->direccion = $direccion;
 
             if ($proveedorModel->exists()) {
-                $errors[] = 'Ya existe un proveedor con ese nombre o RNC.';
+                $errors[] = 'Ya existe un proveedor con ese nombre.';
             } else {
                 if ($proveedorModel->create()) {
                     logActivity($_SESSION['user_id'], "Proveedor creado: {$nombre_proveedor}");
@@ -112,11 +110,11 @@ include '../../includes/header.php';
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label for="rnc" class="form-label">RNC</label>
+                                <label for="rnc" class="form-label">RNC (no se guarda)</label>
                                 <input type="text" class="form-control" id="rnc" name="rnc" 
                                        value="<?php echo isset($_POST['rnc']) ? htmlspecialchars($_POST['rnc']) : ''; ?>" 
                                        maxlength="9" pattern="\d{9}" placeholder="123456789">
-                                <div class="form-text">9 dígitos (opcional)</div>
+                                <div class="form-text text-warning">La tabla actual no tiene columna RNC</div>
                             </div>
                         </div>
 
@@ -129,7 +127,7 @@ include '../../includes/header.php';
                             </div>
 
                             <div class="col-md-3 mb-3">
-                                <label for="telefono" class="form-label">Teléfono</label>
+                                <label for="telefono" class="form-label">Teléfono (no se guarda)</label>
                                 <input type="tel" class="form-control" id="telefono" name="telefono" 
                                        value="<?php echo isset($_POST['telefono']) ? htmlspecialchars($_POST['telefono']) : ''; ?>" 
                                        maxlength="20" placeholder="(809) 123-4567">
@@ -153,10 +151,10 @@ include '../../includes/header.php';
 
                         <div class="row">
                             <div class="col-12 mb-3">
-                                <label for="notas" class="form-label">Notas Adicionales</label>
+                                <label for="notas" class="form-label">Notas (no se guardan)</label>
                                 <textarea class="form-control" id="notas" name="notas" rows="3" 
-                                          placeholder="Información adicional sobre el proveedor..."><?php echo isset($_POST['notas']) ? htmlspecialchars($_POST['notas']) : ''; ?></textarea>
-                                <div class="form-text">Información sobre términos de pago, horarios de atención, especialidades, etc.</div>
+                                          placeholder="(Requiere agregar columna Notas si desea persistir)"><?php echo isset($_POST['notas']) ? htmlspecialchars($_POST['notas']) : ''; ?></textarea>
+                                <div class="form-text text-warning">La tabla actual no tiene columna para notas</div>
                             </div>
                         </div>
 
@@ -166,8 +164,9 @@ include '../../includes/header.php';
                                     <h6><i class="fas fa-info-circle"></i> Información importante:</h6>
                                     <ul class="mb-0">
                                         <li>Solo el <strong>nombre del proveedor</strong> es obligatorio</li>
-                                        <li>El RNC debe tener exactamente 9 dígitos numéricos</li>
-                                        <li>El proveedor se creará con estado <strong>Activo</strong> por defecto</li>
+                                        <li>La tabla actual solo guarda: Nombre, Contacto, Email, Dirección</li>
+                                        <li>Campos RNC, Teléfono, Notas NO se guardarán hasta ampliar el esquema</li>
+                                        <li>SQL sugerido para ampliar: <code>ALTER TABLE TB_Proveedores ADD RNC VARCHAR(20), ADD Telefono VARCHAR(30), ADD Notas TEXT, ADD Estado ENUM('Activo','Inactivo') DEFAULT 'Activo';</code></li>
                                         <li>Puede agregar elementos de inventario después de crear el proveedor</li>
                                     </ul>
                                 </div>

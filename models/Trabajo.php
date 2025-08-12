@@ -28,15 +28,15 @@ class Trabajo {
 
         $stmt = $this->conn->prepare($query);
 
-        // Limpiar datos
-        $this->Cedula_Cliente = htmlspecialchars(strip_tags($this->Cedula_Cliente));
-        $this->Tipo_Trabajo = htmlspecialchars(strip_tags($this->Tipo_Trabajo));
-        $this->Descripcion = htmlspecialchars(strip_tags($this->Descripcion));
-        $this->Precio_Mano_Obra = htmlspecialchars(strip_tags($this->Precio_Mano_Obra));
-        $this->Precio_Total = htmlspecialchars(strip_tags($this->Precio_Total));
-        $this->Estado = htmlspecialchars(strip_tags($this->Estado));
-        $this->Fecha_Inicio = htmlspecialchars(strip_tags($this->Fecha_Inicio));
-        $this->Fecha_Final = htmlspecialchars(strip_tags($this->Fecha_Final));
+    // Limpiar datos (evitar warnings pasando null a strip_tags)
+    $this->Cedula_Cliente   = $this->sanitizeNullable($this->Cedula_Cliente);
+    $this->Tipo_Trabajo     = $this->sanitizeNullable($this->Tipo_Trabajo);
+    $this->Descripcion      = $this->sanitizeNullable($this->Descripcion);
+    $this->Precio_Mano_Obra = $this->sanitizeNullable($this->Precio_Mano_Obra);
+    $this->Precio_Total     = $this->sanitizeNullable($this->Precio_Total);
+    $this->Estado           = $this->sanitizeNullable($this->Estado);
+    $this->Fecha_Inicio     = $this->sanitizeNullable($this->Fecha_Inicio);
+    $this->Fecha_Final      = $this->sanitizeNullable($this->Fecha_Final);
 
         // Bind valores
         $stmt->bindParam(":cedula_cliente", $this->Cedula_Cliente);
@@ -113,16 +113,16 @@ class Trabajo {
 
         $stmt = $this->conn->prepare($query);
 
-        // Limpiar datos
-        $this->Cedula_Cliente = htmlspecialchars(strip_tags($this->Cedula_Cliente));
-        $this->Tipo_Trabajo = htmlspecialchars(strip_tags($this->Tipo_Trabajo));
-        $this->Descripcion = htmlspecialchars(strip_tags($this->Descripcion));
-        $this->Precio_Mano_Obra = htmlspecialchars(strip_tags($this->Precio_Mano_Obra));
-        $this->Precio_Total = htmlspecialchars(strip_tags($this->Precio_Total));
-        $this->Estado = htmlspecialchars(strip_tags($this->Estado));
-        $this->Fecha_Inicio = htmlspecialchars(strip_tags($this->Fecha_Inicio));
-        $this->Fecha_Final = htmlspecialchars(strip_tags($this->Fecha_Final));
-        $this->ID_Trabajo = htmlspecialchars(strip_tags($this->ID_Trabajo));
+    // Limpiar datos
+    $this->Cedula_Cliente   = $this->sanitizeNullable($this->Cedula_Cliente);
+    $this->Tipo_Trabajo     = $this->sanitizeNullable($this->Tipo_Trabajo);
+    $this->Descripcion      = $this->sanitizeNullable($this->Descripcion);
+    $this->Precio_Mano_Obra = $this->sanitizeNullable($this->Precio_Mano_Obra);
+    $this->Precio_Total     = $this->sanitizeNullable($this->Precio_Total);
+    $this->Estado           = $this->sanitizeNullable($this->Estado);
+    $this->Fecha_Inicio     = $this->sanitizeNullable($this->Fecha_Inicio);
+    $this->Fecha_Final      = $this->sanitizeNullable($this->Fecha_Final);
+    $this->ID_Trabajo       = $this->sanitizeNullable($this->ID_Trabajo);
 
         // Bind valores
         $stmt->bindParam(":cedula_cliente", $this->Cedula_Cliente);
@@ -252,6 +252,17 @@ class Trabajo {
         $stmt->bindParam(':id_trabajo', $id_trabajo);
 
         return $stmt->execute();
+    }
+
+    // Sanitiza valores permitiendo nulls sin generar avisos deprecados
+    private function sanitizeNullable($value) {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (is_numeric($value)) {
+            return $value; // no aplicar strip_tags a números
+        }
+        return htmlspecialchars(strip_tags((string)$value), ENT_QUOTES, 'UTF-8');
     }
 }
 ?>

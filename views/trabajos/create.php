@@ -24,17 +24,19 @@ try {
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     try {
-        $trabajoModel->cedula_cliente = !empty($_POST['cedula_cliente']) ? sanitizeInput($_POST['cedula_cliente']) : null;
-        $trabajoModel->tipo_trabajo = sanitizeInput($_POST['tipo_trabajo']);
-        $trabajoModel->descripcion = sanitizeInput($_POST['descripcion']);
-        $trabajoModel->precio_mano_obra = (float)$_POST['precio_mano_obra'];
-        $trabajoModel->precio_total = (float)$_POST['precio_mano_obra']; // Inicialmente igual a mano de obra
-        $trabajoModel->estado = sanitizeInput($_POST['estado']);
-        $trabajoModel->fecha_inicio = !empty($_POST['fecha_inicio']) ? $_POST['fecha_inicio'] : null;
-        $trabajoModel->fecha_final = !empty($_POST['fecha_final']) ? $_POST['fecha_final'] : null;
-        
+        // Usar los nombres de propiedades reales definidos en el modelo (evita dynamic properties en PHP 8.2)
+        $trabajoModel->Cedula_Cliente   = (isset($_POST['cedula_cliente']) && $_POST['cedula_cliente'] !== '') ? sanitizeInput($_POST['cedula_cliente']) : null;
+        $trabajoModel->Tipo_Trabajo     = sanitizeInput($_POST['tipo_trabajo']);
+        $trabajoModel->Descripcion      = isset($_POST['descripcion']) ? sanitizeInput($_POST['descripcion']) : null; // puede ser opcional
+        $trabajoModel->Precio_Mano_Obra = (float)$_POST['precio_mano_obra'];
+        // Inicialmente el total = mano de obra (los materiales se sumarán luego)
+        $trabajoModel->Precio_Total     = $trabajoModel->Precio_Mano_Obra; 
+        $trabajoModel->Estado           = sanitizeInput($_POST['estado']);
+        $trabajoModel->Fecha_Inicio     = (!empty($_POST['fecha_inicio'])) ? $_POST['fecha_inicio'] : null;
+        $trabajoModel->Fecha_Final      = (!empty($_POST['fecha_final'])) ? $_POST['fecha_final'] : null;
+
         if ($trabajoModel->create()) {
-            logActivity($_SESSION['user_id'], "Trabajo creado: " . $trabajoModel->tipo_trabajo);
+            logActivity($_SESSION['user_id'], "Trabajo creado: " . $trabajoModel->Tipo_Trabajo);
             header("Location: index.php?success=created");
             exit();
         } else {

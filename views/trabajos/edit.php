@@ -38,17 +38,21 @@ try {
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     try {
-        $trabajoModel->id_trabajo = $id;
-        $trabajoModel->cedula_cliente = !empty($_POST['cedula_cliente']) ? sanitizeInput($_POST['cedula_cliente']) : null;
-        $trabajoModel->tipo_trabajo = sanitizeInput($_POST['tipo_trabajo']);
-        $trabajoModel->descripcion = sanitizeInput($_POST['descripcion']);
-        $trabajoModel->precio_mano_obra = (float)$_POST['precio_mano_obra'];
-        $trabajoModel->estado = sanitizeInput($_POST['estado']);
-        $trabajoModel->fecha_inicio = !empty($_POST['fecha_inicio']) ? $_POST['fecha_inicio'] : null;
-        $trabajoModel->fecha_final = !empty($_POST['fecha_final']) ? $_POST['fecha_final'] : null;
-        
+        // Propiedades correctas según el modelo Trabajo
+        $trabajoModel->ID_Trabajo       = $id;
+        $trabajoModel->Cedula_Cliente   = (isset($_POST['cedula_cliente']) && $_POST['cedula_cliente'] !== '') ? sanitizeInput($_POST['cedula_cliente']) : null;
+        $trabajoModel->Tipo_Trabajo     = sanitizeInput($_POST['tipo_trabajo']);
+        $trabajoModel->Descripcion      = isset($_POST['descripcion']) ? sanitizeInput($_POST['descripcion']) : null;
+        $trabajoModel->Precio_Mano_Obra = (float)$_POST['precio_mano_obra'];
+        $trabajoModel->Estado           = sanitizeInput($_POST['estado']);
+        $trabajoModel->Fecha_Inicio     = (!empty($_POST['fecha_inicio'])) ? $_POST['fecha_inicio'] : null;
+        $trabajoModel->Fecha_Final      = (!empty($_POST['fecha_final'])) ? $_POST['fecha_final'] : null;
+
+        // Mantener Precio_Total: si quieres recalcularlo aquí podrías hacerlo (ej: materiales + mano de obra)
+        // Por ahora no se modifica directamente para no sobrescribir la suma de materiales.
+
         if ($trabajoModel->update()) {
-            logActivity($_SESSION['user_id'], "Trabajo editado ID: " . $id . " - " . $trabajoModel->tipo_trabajo);
+            logActivity($_SESSION['user_id'], "Trabajo editado ID: " . $id . " - " . $trabajoModel->Tipo_Trabajo);
             header("Location: view.php?id=$id&success=updated");
             exit();
         } else {

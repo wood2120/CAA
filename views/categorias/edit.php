@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($tipo)) {
-        $errors[] = 'El tipo de categoría es obligatorio.';
+        $tipo = 'Material'; // valor por defecto si el usuario no selecciona
     }
 
     if (empty($errors)) {
@@ -117,8 +117,8 @@ include '../../includes/header.php';
                                 <label for="tipo" class="form-label">
                                     Tipo <span class="text-danger">*</span>
                                 </label>
-                                <select class="form-control" id="tipo" name="tipo" required>
-                                    <option value="">Seleccionar tipo...</option>
+                                <select class="form-control" id="tipo" name="tipo">
+                                    <option value="">(Auto: Material)</option>
                                     <?php 
                                     $tipo_actual = isset($_POST['tipo']) ? $_POST['tipo'] : $categoria['tipo'];
                                     ?>

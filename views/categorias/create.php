@@ -17,8 +17,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'El nombre de la categoría es obligatorio.';
     }
 
+    // Tipo ahora opcional: si viene vacío se usará 'Material' por defecto
     if (empty($tipo)) {
-        $errors[] = 'El tipo de categoría es obligatorio.';
+        $tipo = 'Material';
     }
 
     if (empty($errors)) {
@@ -99,8 +100,8 @@ include '../../includes/header.php';
                                 <label for="tipo" class="form-label">
                                     Tipo <span class="text-danger">*</span>
                                 </label>
-                                <select class="form-control" id="tipo" name="tipo" required>
-                                    <option value="">Seleccionar tipo...</option>
+                                <select class="form-control" id="tipo" name="tipo">
+                                    <option value="">(Auto: Material)</option>
                                     <option value="Material" <?php echo (isset($_POST['tipo']) && $_POST['tipo'] == 'Material') ? 'selected' : ''; ?>>
                                         Material
                                     </option>

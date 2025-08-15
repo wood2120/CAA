@@ -19,7 +19,7 @@ define('DB_PASS', EnvLoader::get('DB_PASS', ''));
 
 // Configuración general del sistema
 define('SITE_URL', EnvLoader::get('SITE_URL', 'https://caa-i0xf.onrender.com'));
-define('SITE_NAME', EnvLoader::get('SITE_NAME', 'Sistema de Gestión Empresarial'));
+define('SITE_NAME', EnvLoader::get('SITE_NAME', 'CAA'));
 
 // Configuración de sesiones
 define('SESSION_TIMEOUT', (int)EnvLoader::get('SESSION_TIMEOUT', 3600)); // en segundos

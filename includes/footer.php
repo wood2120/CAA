@@ -14,6 +14,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Custom JS -->
     <script src="<?php echo SITE_URL; ?>/assets/js/main.js"></script>
     
@@ -24,6 +26,15 @@
     <?php endif; ?>
     
     <script>
+        // Fallback si SweetAlert2 no cargó
+        if (typeof Swal === 'undefined') {
+            window.Swal = {
+                fire: function(opts) {
+                    alert((opts.title ? opts.title + '\n' : '') + (opts.text || ''));
+                    return Promise.resolve({ isConfirmed: true });
+                }
+            };
+        }
         // Verificar timeout de sesión cada 5 minutos
         setInterval(function() {
             fetch('<?php echo SITE_URL; ?>/controllers/check_session.php')

@@ -4,6 +4,7 @@ require_once '../../models/Usuario.php';
 
 requireLogin();
 checkSessionTimeout();
+requireRole('Administrador');
 
 $pageTitle = 'Crear Usuario';
 include '../../includes/header.php';
@@ -17,6 +18,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $usuarioModel->usuario = sanitizeInput($_POST['usuario']);
         $usuarioModel->contrasena = password_hash($_POST['contrasena'], PASSWORD_DEFAULT);
         $usuarioModel->rol = sanitizeInput($_POST['rol']);
+        $validRoles = ['Administrador','Contador','Trabajador'];
+        if (!in_array($usuarioModel->rol, $validRoles)) {
+            throw new Exception('Rol inválido');
+        }
         
         if ($usuarioModel->create()) {
             logActivity($_SESSION['user_id'], "Usuario creado: " . $usuarioModel->usuario);
@@ -75,12 +80,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     </label>
                                     <select class="form-select" id="rol" name="rol" required>
                                         <option value="">Seleccionar rol...</option>
-                                        <option value="Administrador" <?php echo (isset($_POST['rol']) && $_POST['rol'] == 'Administrador') ? 'selected' : ''; ?>>
-                                            Administrador
-                                        </option>
-                                        <option value="Dueño" <?php echo (isset($_POST['rol']) && $_POST['rol'] == 'Dueño') ? 'selected' : ''; ?>>
-                                            Dueño
-                                        </option>
+                                        <?php $roles = ['Administrador'=>'Administrador','Contador'=>'Contador','Trabajador'=>'Trabajador'];
+                                        foreach ($roles as $value=>$label): ?>
+                                            <option value="<?php echo $value; ?>" <?php echo (isset($_POST['rol']) && $_POST['rol'] == $value) ? 'selected' : ''; ?>>
+                                                <?php echo $label; ?>
+                                            </option>
+                                        <?php endforeach; ?>
                                     </select>
                                 </div>
                             </div>
@@ -131,7 +136,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <h6><i class="fas fa-info-circle text-info"></i> Roles del Sistema</h6>
                     <ul class="list-unstyled">
                         <li><strong>Administrador:</strong> Acceso completo al sistema</li>
-                        <li><strong>Dueño:</strong> Acceso a funcionalidades específicas</li>
+                        <li><strong>Contador:</strong> Acceso a reportes y trabajos</li>
+                        <li><strong>Trabajador:</strong> Gestión operativa (clientes, trabajos, inventario)</li>
                     </ul>
                     
                     <hr>

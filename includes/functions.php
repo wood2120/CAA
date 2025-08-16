@@ -16,6 +16,21 @@ function hasRole($role) {
     return isset($_SESSION['user_role']) && $_SESSION['user_role'] === $role;
 }
 
+// Función para verificar si el usuario tiene cualquiera de los roles dados
+function hasAnyRole($roles) {
+    if (!isset($_SESSION['user_role'])) return false;
+    if (!is_array($roles)) $roles = [$roles];
+    return in_array($_SESSION['user_role'], $roles);
+}
+
+// Requerir uno de los roles especificados
+function requireRole($roles) {
+    if (!hasAnyRole($roles)) {
+        header('Location: ' . SITE_URL . '/dashboard.php?error=unauthorized');
+        exit();
+    }
+}
+
 // Función para redirigir si no está logueado
 function requireLogin() {
     if (!isLoggedIn()) {

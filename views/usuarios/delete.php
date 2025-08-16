@@ -4,6 +4,7 @@ require_once '../../models/Usuario.php';
 
 requireLogin();
 checkSessionTimeout();
+requireRole('Administrador');
 
 if (!isset($_GET['id'])) {
     header("Location: index.php");

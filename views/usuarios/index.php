@@ -4,6 +4,7 @@ require_once '../../models/Usuario.php';
 
 requireLogin();
 checkSessionTimeout();
+requireRole('Administrador');
 
 $pageTitle = 'Gestión de Usuarios';
 include '../../includes/header.php';
@@ -114,9 +115,13 @@ logActivity($_SESSION['user_id'], "Acceso a gestión de usuarios");
                                 <strong><?php echo htmlspecialchars($row['Usuario']); ?></strong>
                             </td>
                             <td>
-                                <span class="badge <?php echo $row['Rol'] == 'Administrador' ? 'bg-primary' : 'bg-success'; ?>">
-                                    <?php echo htmlspecialchars($row['Rol']); ?>
-                                </span>
+                                <?php
+                                    $badgeClass = 'bg-secondary';
+                                    if ($row['Rol'] == 'Administrador') $badgeClass = 'bg-primary';
+                                    elseif ($row['Rol'] == 'Contador') $badgeClass = 'bg-info';
+                                    elseif ($row['Rol'] == 'Trabajador') $badgeClass = 'bg-success';
+                                ?>
+                                <span class="badge <?php echo $badgeClass; ?>"><?php echo htmlspecialchars($row['Rol']); ?></span>
                             </td>
                             <td class="text-center">
                                 <div class="btn-group" role="group">

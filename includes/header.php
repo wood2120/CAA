@@ -33,41 +33,62 @@
                 
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav me-auto">
+                        <!-- Inicio: visible para todos los roles -->
                         <li class="nav-item">
                             <a class="nav-link" href="<?php echo SITE_URL; ?>/dashboard.php">
                                 <i class="fas fa-home"></i> Inicio
                             </a>
                         </li>
+                        <!-- Clientes: visible para Administrador y Trabajador -->
+                        <?php if (hasAnyRole(['Administrador','Trabajador'])): ?>
                         <li class="nav-item">
                             <a class="nav-link" href="<?php echo SITE_URL; ?>/views/clientes/index.php">
                                 <i class="fas fa-users"></i> Clientes
                             </a>
                         </li>
+                        <?php endif; ?>
+                        <!-- Trabajos: visible para todos excepto (ninguno) -->
+                        <?php if (hasAnyRole(['Administrador','Trabajador','Contador'])): ?>
                         <li class="nav-item">
                             <a class="nav-link" href="<?php echo SITE_URL; ?>/views/trabajos/index.php">
                                 <i class="fas fa-briefcase"></i> Trabajos
                             </a>
                         </li>
+                        <?php endif; ?>
+                        <!-- Inventario: visible para Administrador y Trabajador -->
+                        <?php if (hasAnyRole(['Administrador','Trabajador'])): ?>
                         <li class="nav-item">
                             <a class="nav-link" href="<?php echo SITE_URL; ?>/views/inventario/index.php">
                                 <i class="fas fa-boxes"></i> Inventario
                             </a>
                         </li>
+                        <?php endif; ?>
+                        <!-- Proveedores: solo Administrador -->
+                        <?php if (hasRole('Administrador')): ?>
                         <li class="nav-item">
                             <a class="nav-link" href="<?php echo SITE_URL; ?>/views/proveedores/index.php">
-                                <i class="fas fa-boxes"></i> Proveedores
+                                <i class="fas fa-truck"></i> Proveedores
                             </a>
                         </li>
+                        <?php endif; ?>
+                        <!-- Categorias: solo Administrador -->
+                        <?php if (hasRole('Administrador')): ?>
                         <li class="nav-item">
                             <a class="nav-link" href="<?php echo SITE_URL; ?>/views/categorias/index.php">
-                                <i class="fas fa-boxes"></i> Categorias
+                                <i class="fas fa-tags"></i> Categorías
                             </a>
                         </li>
+                        <?php endif; ?>
+                        <!-- Usuarios: solo Administrador -->
+                        <?php if (hasRole('Administrador')): ?>
                         <li class="nav-item">
                             <a class="nav-link" href="<?php echo SITE_URL; ?>/views/usuarios/index.php">
-                                <i class="fas fa-boxes"></i> Usuarios
+                                <i class="fas fa-user-cog"></i> Usuarios
                             </a>
                         </li>
+                        <?php endif; ?>
+                        <!-- Reportes: Administrador y Contador -->
+                        <?php if (hasAnyRole(['Administrador','Contador'])): ?>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="reportesDropdown" role="button" data-bs-toggle="dropdown">
                                 <i class="fas fa-chart-bar"></i> Reportes
@@ -76,15 +97,11 @@
                                 <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/views/reportes/clientes.php">Clientes</a></li>
                                 <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/views/reportes/trabajos.php">Trabajos</a></li>
                                 <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/views/reportes/inventario.php">Inventario</a></li>
+                                <?php if (hasRole('Administrador')): ?>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/views/reportes/bitacora.php">Bitácora</a></li>
+                                <?php endif; ?>
                             </ul>
-                        </li>
-                        <?php if (hasRole('Administrador')): ?>
-                        <li class="nav-item">
-                            <a class="nav-link" href="<?php echo SITE_URL; ?>/views/usuarios/index.php">
-                                <i class="fas fa-user-cog"></i> Usuarios
-                            </a>
                         </li>
                         <?php endif; ?>
                     </ul>

@@ -41,7 +41,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $userModel->usuario = $usuario;
             $userModel->contrasena = $contrasena;
-            $userModel->rol = 'Dueño'; 
+            // Registrations públicas se asignan como Trabajador por defecto
+            $userModel->rol = 'Trabajador'; 
             $userModel->id_usuario = 0; 
             if ($userModel->exists()) {
                 $errors[] = 'El nombre de usuario ya está en uso.';

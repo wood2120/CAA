@@ -57,19 +57,12 @@ class Usuario {
     }
 
     // Leer un usuario específico
-    public function readOne() {
+    public function readOne($id) {
         $query = "SELECT ID_Usuario, Usuario, Rol FROM " . $this->table_name . " WHERE ID_Usuario = :id";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id', $this->id_usuario);
+        $stmt->bindParam(':id', $id);
         $stmt->execute();
-
-        if ($stmt->rowCount() == 1) {
-            $row = $stmt->fetch(PDO::FETCH_ASSOC);
-            $this->usuario = $row['Usuario'];
-            $this->rol = $row['Rol'];
-            return true;
-        }
-        return false;
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     // Actualizar usuario
@@ -106,7 +99,7 @@ class Usuario {
 
     // Verificar si el usuario existe
     public function exists() {
-        $query = "SELECT ID_Usuario FROM " . $this->table_name . " WHERE Usuario = :usuario AND ID_Usuario != :id";
+    $query = "SELECT ID_Usuario FROM " . $this->table_name . " WHERE Usuario = :usuario AND ID_Usuario != :id";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':usuario', $this->usuario);
         $stmt->bindParam(':id', $this->id_usuario);

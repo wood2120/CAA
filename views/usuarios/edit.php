@@ -4,6 +4,7 @@ require_once '../../models/Usuario.php';
 
 requireLogin();
 checkSessionTimeout();
+requireRole('Administrador');
 
 if (!isset($_GET['id'])) {
     header("Location: index.php");
@@ -20,9 +21,8 @@ try {
     $usuarioModel = new Usuario($db);
     
     // Obtener datos del usuario
-    $usuario = $usuarioModel->readOne($id);
-    
-    if (!$usuario) {
+    $usuarioData = $usuarioModel->readOne($id);
+    if (!$usuarioData) {
         throw new Exception("Usuario no encontrado");
     }
     
@@ -36,6 +36,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $usuarioModel->id_usuario = $id;
         $usuarioModel->usuario = sanitizeInput($_POST['usuario']);
         $usuarioModel->rol = sanitizeInput($_POST['rol']);
+        $validRoles = ['Administrador','Contador','Trabajador'];
+        if (!in_array($usuarioModel->rol, $validRoles)) {
+            throw new Exception('Rol inválido');
+        }
         
         // Solo actualizar contraseña si se proporcionó una nueva
         if (!empty($_POST['contrasena'])) {
@@ -87,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     </label>
                                     <input type="text" class="form-control" id="usuario" name="usuario" 
                                            required maxlength="150" 
-                                           value="<?php echo htmlspecialchars($usuario['Usuario']); ?>">
+                                           value="<?php echo htmlspecialchars($usuarioModel->usuario); ?>">
                                     <div class="form-text">Nombre de usuario único para el acceso al sistema</div>
                                 </div>
                             </div>
@@ -99,12 +103,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     </label>
                                     <select class="form-select" id="rol" name="rol" required>
                                         <option value="">Seleccionar rol...</option>
-                                        <option value="Administrador" <?php echo ($usuario['Rol'] == 'Administrador') ? 'selected' : ''; ?>>
-                                            Administrador
-                                        </option>
-                                        <option value="Dueño" <?php echo ($usuario['Rol'] == 'Dueño') ? 'selected' : ''; ?>>
-                                            Dueño
-                                        </option>
+                                        <?php $roles = ['Administrador'=>'Administrador','Contador'=>'Contador','Trabajador'=>'Trabajador'];
+                                        foreach ($roles as $value=>$label): ?>
+                                            <option value="<?php echo $value; ?>" <?php echo ($usuarioModel->rol == $value) ? 'selected' : ''; ?>>
+                                                <?php echo $label; ?>
+                                            </option>
+                                        <?php endforeach; ?>
                                     </select>
                                 </div>
                             </div>
@@ -152,11 +156,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <h6 class="m-0 font-weight-bold text-primary">Información Actual</h6>
                 </div>
                 <div class="card-body">
-                    <p><strong>ID:</strong> <?php echo $usuario['ID_Usuario']; ?></p>
-                    <p><strong>Usuario Actual:</strong> <?php echo htmlspecialchars($usuario['Usuario']); ?></p>
+                    <p><strong>ID:</strong> <?php echo $usuarioModel->id_usuario ?? $id; ?></p>
+                    <p><strong>Usuario Actual:</strong> <?php echo htmlspecialchars($usuarioModel->usuario); ?></p>
                     <p><strong>Rol Actual:</strong> 
-                        <span class="badge <?php echo $usuario['Rol'] == 'Administrador' ? 'bg-primary' : 'bg-success'; ?>">
-                            <?php echo htmlspecialchars($usuario['Rol']); ?>
+                        <span class="badge <?php echo $usuarioModel->rol == 'Administrador' ? 'bg-primary' : ($usuarioModel->rol == 'Contador' ? 'bg-info' : 'bg-success'); ?>">
+                            <?php echo htmlspecialchars($usuarioModel->rol); ?>
                         </span>
                     </p>
                     
@@ -167,7 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         Solo complete los campos de contraseña si desea cambiarla.
                     </p>
                     
-                    <?php if ($usuario['ID_Usuario'] == $_SESSION['user_id']): ?>
+                    <?php if ($id == $_SESSION['user_id']): ?>
                     <div class="alert alert-warning alert-sm">
                         <i class="fas fa-exclamation-triangle"></i> Está editando su propio usuario
                     </div>

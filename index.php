@@ -18,8 +18,8 @@ include 'includes/header.php';
             <div class="bg-primary d-flex align-items-center justify-content-center min-vh-100">
                 <div class="text-center text-white">
                     <i class="fas fa-building fa-5x mb-4"></i>
-                    <h2><?php echo SITE_NAME; ?></h2>
-                    <p class="lead">CAA</p>
+                    <h2>CAA</h2>
+                    <p class="lead">Sistema de gestion empresarial</p>
                 </div>
             </div>
         </div>

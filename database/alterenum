@@ -1,0 +1,44 @@
+-- Migración de ENUM Rol para TB_Usuarios
+-- Objetivo: pasar de ('Administrador','Dueño') a ('Administrador','Contador','Trabajador')
+-- Ejecutar en MySQL / MariaDB
+
+-- 1. Ver valores existentes
+SELECT DISTINCT Rol FROM TB_Usuarios;
+
+-- 2. Normalizar valores inválidos o legacy
+UPDATE TB_Usuarios
+SET Rol = 'Trabajador'
+WHERE Rol NOT IN ('Administrador','Contador','Trabajador')
+   OR Rol IS NULL OR Rol = '';
+
+-- 3. (Opcional) Verificar nuevamente
+SELECT DISTINCT Rol FROM TB_Usuarios;
+
+-- 4. Camino directo (si ya NO quedan valores fuera del set nuevo)
+-- ALTER TABLE TB_Usuarios
+--   MODIFY Rol ENUM('Administrador','Contador','Trabajador') NOT NULL;
+
+-- 5. Camino seguro transaccional con paso intermedio (usar si el ALTER directo da error 1265)
+START TRANSACTION;
+  -- Ampliar temporalmente para garantizar compatibilidad (añade 'Dueño' si existe en el schema original)
+  ALTER TABLE TB_Usuarios
+    MODIFY Rol ENUM('Administrador','Contador','Trabajador','Dueño') NOT NULL;
+
+  -- Normalizar cualquier remanente
+  UPDATE TB_Usuarios SET Rol='Trabajador' WHERE Rol='Dueño' OR Rol NOT IN ('Administrador','Contador','Trabajador');
+
+  -- Aplicar ENUM definitivo
+  ALTER TABLE TB_Usuarios
+    MODIFY Rol ENUM('Administrador','Contador','Trabajador') NOT NULL;
+COMMIT;
+
+-- 6. Validación final
+SELECT DISTINCT Rol FROM TB_Usuarios;
+
+-- 7. (Opcional) Insertar usuario admin si no existe
+INSERT INTO TB_Usuarios (Usuario, Contrasena, Rol)
+SELECT 'admin', '$2y$10$abcdefghijklmnopqrstuvABCDEuVGD9y7wJmP2gSPFcbKnGZkQdVepyi', 'Administrador'
+WHERE NOT EXISTS (SELECT 1 FROM TB_Usuarios WHERE Usuario='admin');
+-- Reemplaza el hash por uno generado con password_hash('TuClaveSegura', PASSWORD_DEFAULT);
+
+-- Fin de migración

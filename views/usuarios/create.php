@@ -16,7 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $usuarioModel = new Usuario($db);
         
         $usuarioModel->usuario = sanitizeInput($_POST['usuario']);
-        $usuarioModel->contrasena = password_hash($_POST['contrasena'], PASSWORD_DEFAULT);
+    // Asignar contraseña en texto plano; el modelo la hashea en create()
+    $usuarioModel->contrasena = $_POST['contrasena'];
         $usuarioModel->rol = sanitizeInput($_POST['rol']);
         $validRoles = ['Administrador','Contador','Trabajador'];
         if (!in_array($usuarioModel->rol, $validRoles)) {

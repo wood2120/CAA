@@ -25,6 +25,10 @@ try {
     if (!$usuarioData) {
         throw new Exception("Usuario no encontrado");
     }
+    // Asignar propiedades al modelo para usar en el formulario
+    $usuarioModel->id_usuario = $usuarioData['ID_Usuario'];
+    $usuarioModel->usuario = $usuarioData['Usuario'];
+    $usuarioModel->rol = $usuarioData['Rol'];
     
 } catch (Exception $e) {
     header("Location: index.php?error=" . urlencode($e->getMessage()));
@@ -43,7 +47,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         // Solo actualizar contraseña si se proporcionó una nueva
         if (!empty($_POST['contrasena'])) {
-            $usuarioModel->contrasena = password_hash($_POST['contrasena'], PASSWORD_DEFAULT);
+            // Asignar contraseña en texto plano; el modelo se encarga de hashear
+            $usuarioModel->contrasena = $_POST['contrasena'];
         }
         
         if ($usuarioModel->update()) {

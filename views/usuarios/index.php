@@ -159,6 +159,15 @@ logActivity($_SESSION['user_id'], "Acceso a gestión de usuarios");
 
 <script>
 function deleteUsuario(id, nombre) {
+    // Fallback si SweetAlert2 no está disponible
+    if (typeof Swal === 'undefined') {
+        const ok = confirm(`Se eliminará el usuario "${nombre}". Esta acción no se puede deshacer.`);
+        if (ok) {
+            window.location.href = 'delete.php?id=' + encodeURIComponent(id);
+        }
+        return;
+    }
+
     Swal.fire({
         title: '¿Estás seguro?',
         text: `Se eliminará el usuario "${nombre}". Esta acción no se puede deshacer.`,
@@ -170,7 +179,13 @@ function deleteUsuario(id, nombre) {
         cancelButtonText: 'Cancelar'
     }).then((result) => {
         if (result.isConfirmed) {
-            window.location.href = `delete.php?id=${id}`;
+            window.location.href = 'delete.php?id=' + encodeURIComponent(id);
+        }
+    }).catch(err => {
+        console.error('Error mostrando SweetAlert:', err);
+        const ok = confirm(`Se eliminará el usuario "${nombre}". Esta acción no se puede deshacer.`);
+        if (ok) {
+            window.location.href = 'delete.php?id=' + encodeURIComponent(id);
         }
     });
 }

@@ -19,7 +19,7 @@ include 'includes/header.php';
                 <div class="text-center text-white">
                     <i class="fas fa-building fa-5x mb-4"></i>
                     <h2><?php echo SITE_NAME; ?></h2>
-                    <p class="lead">Sistema integral para la gestión empresarial</p>
+                    <p class="lead">CAA</p>
                 </div>
             </div>
         </div>

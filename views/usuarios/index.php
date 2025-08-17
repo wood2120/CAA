@@ -40,8 +40,24 @@ logActivity($_SESSION['user_id'], "Acceso a gestión de usuarios");
     </div>
 
     <?php if (isset($error)): ?>
-    <div class="alert alert-danger">
+    <div class="alert alert-danger alert-dismissible fade show">
         <i class="fas fa-exclamation-triangle"></i> <?php echo $error; ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <?php endif; ?>
+
+    <?php if (isset($_GET['error'])): ?>
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="fas fa-exclamation-triangle"></i>
+        <?php
+            switch($_GET['error']) {
+                case 'self_delete': echo 'No puedes eliminarte a ti mismo.'; break;
+                case 'not_found': echo 'Usuario no encontrado.'; break;
+                case 'delete_failed': echo 'Error al eliminar el usuario.'; break;
+                default: echo 'Ocurrió un error.'; break;
+            }
+        ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     <?php endif; ?>
 
@@ -130,9 +146,12 @@ logActivity($_SESSION['user_id'], "Acceso a gestión de usuarios");
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     <?php if ($row['ID_Usuario'] != $_SESSION['user_id']): ?>
-                                    <a href="delete.php?id=<?php echo $row['ID_Usuario']; ?>" class="btn btn-sm btn-outline-danger" title="Eliminar">
-                                        <i class="fas fa-trash"></i>
-                                    </a>
+                                    <form method="POST" action="delete.php" class="d-inline delete-user-form" data-username="<?php echo htmlspecialchars($row['Usuario']); ?>">
+                                        <input type="hidden" name="id" value="<?php echo $row['ID_Usuario']; ?>">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
                                     <?php endif; ?>
                                 </div>
                             </td>
@@ -158,3 +177,28 @@ logActivity($_SESSION['user_id'], "Acceso a gestión de usuarios");
 
 
 <?php include '../../includes/footer.php'; ?>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.delete-user-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = this.getAttribute('data-username');
+            const submitDeletion = () => this.submit();
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: '¿Eliminar usuario?',
+                    text: `Se eliminará el usuario "${username}". Esta acción no se puede deshacer.`,
+                    icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Sí, eliminar',
+                        cancelButtonText: 'Cancelar'
+                }).then(r => { if (r.isConfirmed) submitDeletion(); });
+            } else {
+                if (confirm(`Se eliminará el usuario "${username}". Esta acción no se puede deshacer.`)) submitDeletion();
+            }
+        });
+    });
+});
+</script>

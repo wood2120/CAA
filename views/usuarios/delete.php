@@ -6,16 +6,16 @@ requireLogin();
 checkSessionTimeout();
 requireRole('Administrador');
 
-if (!isset($_GET['id'])) {
-    header("Location: index.php");
+// ID por POST (form) o GET (enlace viejo)
+$id = (int)($_POST['id'] ?? $_GET['id'] ?? 0);
+if ($id <= 0) {
+    header("Location: index.php?error=not_found");
     exit();
 }
 
-$id = (int)$_GET['id'];
-
 // No permitir que el usuario se elimine a sí mismo
 if ($id == $_SESSION['user_id']) {
-    header("Location: index.php?error=" . urlencode("No puedes eliminarte a ti mismo"));
+    header("Location: index.php?error=self_delete");
     exit();
 }
 
@@ -27,7 +27,8 @@ try {
     // Verificar que el usuario existe
     $usuario = $usuarioModel->readOne($id);
     if (!$usuario) {
-        throw new Exception("Usuario no encontrado");
+        header("Location: index.php?error=not_found");
+        exit();
     }
     
     $usuarioModel->id_usuario = $id;
@@ -36,11 +37,11 @@ try {
         logActivity($_SESSION['user_id'], "Usuario eliminado: " . $usuario['Usuario']);
         header("Location: index.php?success=deleted");
     } else {
-        header("Location: index.php?error=" . urlencode("Error al eliminar el usuario"));
+        header("Location: index.php?error=delete_failed");
     }
     
 } catch (Exception $e) {
-    header("Location: index.php?error=" . urlencode($e->getMessage()));
+    header("Location: index.php?error=delete_failed");
 }
 exit();
 ?>

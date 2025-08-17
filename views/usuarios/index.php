@@ -130,11 +130,9 @@ logActivity($_SESSION['user_id'], "Acceso a gestión de usuarios");
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     <?php if ($row['ID_Usuario'] != $_SESSION['user_id']): ?>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" 
-                                            onclick="deleteUsuario('<?php echo $row['ID_Usuario']; ?>', '<?php echo htmlspecialchars($row['Usuario']); ?>')" 
-                                            title="Eliminar">
+                                    <a href="delete.php?id=<?php echo $row['ID_Usuario']; ?>" class="btn btn-sm btn-outline-danger" title="Eliminar">
                                         <i class="fas fa-trash"></i>
-                                    </button>
+                                    </a>
                                     <?php endif; ?>
                                 </div>
                             </td>
@@ -157,38 +155,6 @@ logActivity($_SESSION['user_id'], "Acceso a gestión de usuarios");
     </div>
 </div>
 
-<script>
-function deleteUsuario(id, nombre) {
-    // Fallback si SweetAlert2 no está disponible
-    if (typeof Swal === 'undefined') {
-        const ok = confirm(`Se eliminará el usuario "${nombre}". Esta acción no se puede deshacer.`);
-        if (ok) {
-            window.location.href = 'delete.php?id=' + encodeURIComponent(id);
-        }
-        return;
-    }
 
-    Swal.fire({
-        title: '¿Estás seguro?',
-        text: `Se eliminará el usuario "${nombre}". Esta acción no se puede deshacer.`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            window.location.href = 'delete.php?id=' + encodeURIComponent(id);
-        }
-    }).catch(err => {
-        console.error('Error mostrando SweetAlert:', err);
-        const ok = confirm(`Se eliminará el usuario "${nombre}". Esta acción no se puede deshacer.`);
-        if (ok) {
-            window.location.href = 'delete.php?id=' + encodeURIComponent(id);
-        }
-    });
-}
-</script>
 
 <?php include '../../includes/footer.php'; ?>

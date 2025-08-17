@@ -6,10 +6,15 @@ requireLogin();
 checkSessionTimeout();
 requireRole('Administrador');
 
-// ID por POST (form) o GET (enlace viejo)
-$id = (int)($_POST['id'] ?? $_GET['id'] ?? 0);
+// Solo aceptar POST (patrón uniforme con otras vistas)
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['id'])) {
+    header('Location: index.php?error=not_found');
+    exit();
+}
+
+$id = (int)$_POST['id'];
 if ($id <= 0) {
-    header("Location: index.php?error=not_found");
+    header('Location: index.php?error=not_found');
     exit();
 }
 

@@ -94,7 +94,12 @@ class Usuario {
         $query = "DELETE FROM " . $this->table_name . " WHERE ID_Usuario = :id";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $this->id_usuario);
-        return $stmt->execute();
+        try {
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log('Error eliminando usuario ID ' . $this->id_usuario . ': ' . $e->getMessage());
+            return false;
+        }
     }
 
     // Verificar si el usuario existe

@@ -53,6 +53,7 @@ logActivity($_SESSION['user_id'], "Acceso a gestión de usuarios");
             switch($_GET['error']) {
                 case 'self_delete': echo 'No puedes eliminarte a ti mismo.'; break;
                 case 'not_found': echo 'Usuario no encontrado.'; break;
+                case 'has_refs': echo 'No se puede eliminar: el usuario tiene movimientos o registros en bitácora.'; break;
                 case 'delete_failed': echo 'Error al eliminar el usuario.'; break;
                 default: echo 'Ocurrió un error.'; break;
             }

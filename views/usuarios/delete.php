@@ -36,8 +36,26 @@ try {
         exit();
     }
     
+    // Verificar referencias (bitácora, movimientos inventario)
+    $refs = [
+        'bitacora' => 0,
+        'movimientos' => 0
+    ];
+    $stmtRef = $db->prepare("SELECT COUNT(*) c FROM TB_Bitacora WHERE ID_Usuario = :id");
+    $stmtRef->execute([':id' => $id]);
+    $refs['bitacora'] = (int)$stmtRef->fetchColumn();
+
+    $stmtRef = $db->prepare("SELECT COUNT(*) c FROM TB_Movimientos_Inventario WHERE ID_Usuario = :id");
+    $stmtRef->execute([':id' => $id]);
+    $refs['movimientos'] = (int)$stmtRef->fetchColumn();
+
+    if ($refs['bitacora'] > 0 || $refs['movimientos'] > 0) {
+        header('Location: index.php?error=has_refs');
+        exit();
+    }
+
     $usuarioModel->id_usuario = $id;
-    
+
     if ($usuarioModel->delete()) {
         logActivity($_SESSION['user_id'], "Usuario eliminado: " . $usuario['Usuario']);
         header("Location: index.php?success=deleted");

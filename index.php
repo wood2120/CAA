@@ -102,16 +102,7 @@ include 'includes/header.php';
                                     </div>
                                 </form>
 
-                                <div class="text-center mt-4">
-                                    <div class="mb-2">
-                                        <a href="register.php" class="text-decoration-none">
-                                            <i class="fas fa-user-plus"></i> ¿No tienes cuenta? Regístrate aquí
-                                        </a>
-                                    </div>
-                                    <small class="text-muted">
-                                        © <?php echo date('Y'); ?> <?php echo SITE_NAME; ?>
-                                    </small>
-                                </div>
+                                
                             </div>
                         </div>
                     </div>

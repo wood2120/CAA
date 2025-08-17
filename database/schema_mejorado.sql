@@ -8,7 +8,8 @@ CREATE TABLE TB_Usuarios (
     ID_Usuario INT AUTO_INCREMENT PRIMARY KEY,
     Usuario VARCHAR(150) NOT NULL,
     Contrasena VARCHAR(255) NOT NULL,
-    Rol ENUM('Administrador','Contador','Trabajador') NOT NULL;
+    Rol ENUM('Administrador','Contador','Trabajador') NOT NULL,
+    Activo TINYINT(1) NOT NULL DEFAULT 1
 );
 
 -- Tabla de clientes

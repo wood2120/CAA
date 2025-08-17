@@ -147,10 +147,7 @@ logActivity($_SESSION['user_id'], "Acceso a gestión de clientes");
                             </td>
                             <td class="text-center no-print">
                                 <div class="btn-group" role="group">
-                                    <a href="view.php?cedula=<?php echo urlencode($row['Cedula']); ?>" 
-                                       class="btn btn-sm btn-outline-info" title="Ver detalles">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
+                                    
                                     <a href="edit.php?cedula=<?php echo urlencode($row['Cedula']); ?>" 
                                        class="btn btn-sm btn-outline-warning" title="Editar">
                                         <i class="fas fa-edit"></i>

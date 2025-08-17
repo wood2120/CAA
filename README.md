@@ -1,3 +1,11 @@
+### Eliminación de Usuarios (Soft Delete)
+Desde la última actualización, la eliminación de usuarios es lógica (soft delete). El registro en `TB_Usuarios` se marca con `Activo = 0` y se renombra el campo `Usuario` añadiendo sufijo `__del_ID` para evitar colisiones futuras. Los registros históricos (bitácora, movimientos, etc.) permanecen intactos.
+
+Para volver a activar un usuario, basta con ejecutar:
+```
+UPDATE TB_Usuarios SET Activo = 1, Usuario = 'nuevo_nombre' WHERE ID_Usuario = X;
+```
+
 # README - Sistema de Gestión Empresarial
 
 ## Descripción

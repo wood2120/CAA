@@ -9,6 +9,7 @@ class Usuario {
     public $usuario;
     public $contrasena;
     public $rol;
+    public $activo = 1;
 
     public function __construct($db) {
         $this->conn = $db;
@@ -16,7 +17,7 @@ class Usuario {
 
     // Autenticar usuario
     public function login($usuario, $contrasena) {
-        $query = "SELECT ID_Usuario, Usuario, Contrasena, Rol FROM " . $this->table_name . " WHERE Usuario = :usuario";
+        $query = "SELECT ID_Usuario, Usuario, Contrasena, Rol FROM " . $this->table_name . " WHERE Usuario = :usuario AND Activo = 1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':usuario', $usuario);
         $stmt->execute();
@@ -35,7 +36,7 @@ class Usuario {
 
     // Crear usuario
     public function create() {
-        $query = "INSERT INTO " . $this->table_name . " (Usuario, Contrasena, Rol) VALUES (:usuario, :contrasena, :rol)";
+        $query = "INSERT INTO " . $this->table_name . " (Usuario, Contrasena, Rol, Activo) VALUES (:usuario, :contrasena, :rol, 1)";
         $stmt = $this->conn->prepare($query);
 
         // Hash de la contraseña
@@ -50,7 +51,7 @@ class Usuario {
 
     // Leer todos los usuarios
     public function readAll() {
-        $query = "SELECT ID_Usuario, Usuario, Rol FROM " . $this->table_name . " ORDER BY Usuario";
+        $query = "SELECT ID_Usuario, Usuario, Rol FROM " . $this->table_name . " WHERE Activo = 1 ORDER BY Usuario";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt;
@@ -58,7 +59,7 @@ class Usuario {
 
     // Leer un usuario específico
     public function readOne($id) {
-        $query = "SELECT ID_Usuario, Usuario, Rol FROM " . $this->table_name . " WHERE ID_Usuario = :id";
+        $query = "SELECT ID_Usuario, Usuario, Rol FROM " . $this->table_name . " WHERE ID_Usuario = :id AND Activo = 1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id);
         $stmt->execute();
@@ -91,13 +92,14 @@ class Usuario {
 
     // Eliminar usuario
     public function delete() {
-        $query = "DELETE FROM " . $this->table_name . " WHERE ID_Usuario = :id";
+        // Soft delete: marcar inactivo y anonimizar nombre para evitar conflictos
+        $query = "UPDATE " . $this->table_name . " SET Activo = 0, Usuario = CONCAT(Usuario, '__del_', ID_Usuario) WHERE ID_Usuario = :id";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $this->id_usuario);
         try {
             return $stmt->execute();
         } catch (PDOException $e) {
-            error_log('Error eliminando usuario ID ' . $this->id_usuario . ': ' . $e->getMessage());
+            error_log('Error soft-deleting usuario ID ' . $this->id_usuario . ': ' . $e->getMessage());
             return false;
         }
     }
@@ -110,6 +112,16 @@ class Usuario {
         $stmt->bindParam(':id', $this->id_usuario);
         $stmt->execute();
         return $stmt->rowCount() > 0;
+    }
+
+    // Búsqueda por usuario o rol
+    public function search($term) {
+        $like = '%' . $term . '%';
+        $query = "SELECT ID_Usuario, Usuario, Rol FROM " . $this->table_name . " WHERE Activo = 1 AND (Usuario LIKE :term OR Rol LIKE :term) ORDER BY Usuario";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':term', $like);
+        $stmt->execute();
+        return $stmt;
     }
 }
 ?>

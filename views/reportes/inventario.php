@@ -183,6 +183,14 @@ include '../../includes/header.php';
 logActivity($_SESSION['user_id'], "Generó reporte de inventario");
 ?>
 
+<style>
+/* Limitar ancho horizontal del gráfico Top 10 */
+#valorChartWrapper { max-width: 560px; margin: 0 auto; }
+@media (max-width: 768px){
+  #valorChartWrapper { max-width: 100%; }
+}
+</style>
+
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">
@@ -401,8 +409,10 @@ logActivity($_SESSION['user_id'], "Generó reporte de inventario");
                     </div>
                 </div>
                 <div class="card-body">
-                    <canvas id="valorChart" style="height:220px"></canvas>
-                    <div class="mt-3 small" id="topValorResumen"></div>
+                    <div id="valorChartWrapper">
+                        <canvas id="valorChart" style="height:220px"></canvas>
+                    </div>
+                     <div class="mt-3 small" id="topValorResumen"></div>
                 </div>
             </div>
         </div>
@@ -668,8 +678,8 @@ $__topValor = array_slice($__topValor,0,10);
                 borderColor: '#0a4d88',
                 borderWidth: 1,
                 maxBarThickness: 20,
-                barPercentage: 0.6,
-                categoryPercentage: 0.6
+                barPercentage: 0.55,
+                categoryPercentage: 0.55
             }]
         },
         options: {

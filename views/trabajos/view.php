@@ -118,70 +118,7 @@ logActivity($_SESSION['user_id'], "Vista de detalles trabajo ID: " . $id);
                 </div>
             </div>
 
-            <!-- Materiales y Herramientas Utilizados -->
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-tools"></i> Materiales y Herramientas Utilizados
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <?php if ($materialesStmt->rowCount() > 0): ?>
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Item</th>
-                                    <th>Categoría</th>
-                                    <th>Cantidad</th>
-                                    <th>Precio Unit.</th>
-                                    <th>Subtotal</th>
-                                    <th>Fecha Uso</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php 
-                                $totalMateriales = 0;
-                                while ($material = $materialesStmt->fetch(PDO::FETCH_ASSOC)): 
-                                    $totalMateriales += $material['Subtotal'];
-                                ?>
-                                <tr>
-                                    <td>
-                                        <strong><?php echo htmlspecialchars($material['item_nombre']); ?></strong>
-                                        <br><small class="text-muted"><?php echo htmlspecialchars($material['Unidad_Medida']); ?></small>
-                                    </td>
-                                    <td>
-                                        <span class="badge <?php echo $material['tipo_categoria'] == 'Material' ? 'bg-info' : 'bg-warning'; ?>">
-                                            <?php echo htmlspecialchars($material['Nombre_Categoria']); ?>
-                                        </span>
-                                    </td>
-                                    <td><?php echo number_format($material['Cantidad_Usada']); ?></td>
-                                    <td><?php echo formatCurrency($material['Precio_Unitario_Usado']); ?></td>
-                                    <td><strong><?php echo formatCurrency($material['Subtotal']); ?></strong></td>
-                                    <td><?php echo formatDate($material['Fecha_Uso']); ?></td>
-                                </tr>
-                                <?php endwhile; ?>
-                            </tbody>
-                            <tfoot class="table-light">
-                                <tr>
-                                    <th colspan="4" class="text-end">Total Materiales:</th>
-                                    <th><?php echo formatCurrency($totalMateriales); ?></th>
-                                    <th></th>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                    <?php else: ?>
-                    <div class="text-center py-4">
-                        <i class="fas fa-tools fa-3x text-muted mb-3"></i>
-                        <h6 class="text-muted">No se han registrado materiales o herramientas para este trabajo</h6>
-                        <a href="agregar_materiales.php?id=<?php echo $trabajo['ID_Trabajo']; ?>" class="btn btn-primary">
-                            <i class="fas fa-plus"></i> Agregar Materiales
-                        </a>
-                    </div>
-                    <?php endif; ?>
-                </div>
-            </div>
+            
         </div>
 
         <!-- Panel Lateral -->
@@ -192,9 +129,7 @@ logActivity($_SESSION['user_id'], "Vista de detalles trabajo ID: " . $id);
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="agregar_materiales.php?id=<?php echo $trabajo['ID_Trabajo']; ?>" class="btn btn-success">
-                            <i class="fas fa-plus"></i> Agregar Materiales
-                        </a>
+                        
                         <a href="edit.php?id=<?php echo $trabajo['ID_Trabajo']; ?>" class="btn btn-warning">
                             <i class="fas fa-edit"></i> Editar Trabajo
                         </a>

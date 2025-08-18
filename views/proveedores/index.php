@@ -5,12 +5,15 @@ require_once '../../models/Proveedor.php';
 requireLogin();
 checkSessionTimeout();
 
+$pageTitle = 'Gestión de Proveedores'; // usado por header
+
 $database = new Database();
 $db = $database->getConnection();
 $proveedorModel = new Proveedor($db);
 
 // Filtro de búsqueda simple (solo columnas existentes)
 $search = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
+$exportar = $_GET['exportar'] ?? '';
 
 if ($search !== '') {
     $stmt = $proveedorModel->search($search);
@@ -22,10 +25,37 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $proveedores[] = $row;
 }
 
+// Exportación CSV (ANTES de cualquier salida HTML / header include)
+if ($exportar === 'csv') {
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename=proveedores_' . date('Y-m-d') . '.csv');
+    $out = fopen('php://output', 'w');
+    fwrite($out, "\xEF\xBB\xBF"); // BOM UTF-8
+    $incluyeEstado = $proveedorModel->soportaEstado();
+    $headers = ['ID_Proveedor','Nombre_Proveedor','Contacto','Email','Direccion'];
+    if ($incluyeEstado) { $headers[] = 'Estado'; }
+    fputcsv($out, $headers);
+    foreach ($proveedores as $p) {
+        $row = [
+            $p['ID_Proveedor'] ?? '',
+            preg_replace('/[\r\n]+/',' ', $p['Nombre_Proveedor'] ?? ''),
+            preg_replace('/[\r\n]+/',' ', $p['Contacto'] ?? ''),
+            preg_replace('/[\r\n]+/',' ', $p['Email'] ?? ''),
+            preg_replace('/[\r\n]+/',' ', $p['Direccion'] ?? '')
+        ];
+        if ($incluyeEstado) {
+            $row[] = preg_replace('/[\r\n]+/',' ', $p['Estado'] ?? 'Activo');
+        }
+        fputcsv($out, $row);
+    }
+    fclose($out);
+    exit; // evitar que se añada HTML al CSV
+}
+
 $totalProveedores = count($proveedores);
 
-$pageTitle = 'Gestión de Proveedores';
-include '../../includes/header.php';
+include '../../includes/header.php'; // HEADER solo después de posible exportación
+logActivity($_SESSION['user_id'], 'Acceso a gestión de proveedores');
 ?>
 
 <div class="container-fluid">
@@ -92,9 +122,9 @@ include '../../includes/header.php';
                     <h6 class="m-0 font-weight-bold text-primary">Lista de Proveedores</h6>
                 </div>
                 <div class="col-auto">
-                    <button class="btn btn-outline-secondary btn-sm" onclick="exportarProveedores()">
-                        <i class="fas fa-download"></i> Exportar
-                    </button>
+                    <a href="?exportar=csv<?php echo $search ? '&search=' . urlencode($search) : ''; ?>" class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-file-csv"></i> Exportar CSV
+                    </a>
                 </div>
             </div>
         </div>
@@ -176,23 +206,7 @@ include '../../includes/header.php';
 </div>
 
 <script>
-console.log('Listado simple de proveedores cargado');
-
-/*
-$(document).ready(function() {
-    $('#proveedoresTable').DataTable({
-        "language": {
-            "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json"
-        },
-        "order": [[6, "desc"]],
-        "pageLength": 25,
-        "responsive": true,
-        "columnDefs": [
-            { "orderable": false, "targets": [7] }
-        ]
-    });
-});
-*/
+console.log('Listado de proveedores cargado');
 </script>
 
 <?php include '../../includes/footer.php'; ?>

@@ -246,19 +246,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <p><strong>Creado:</strong> <?php echo formatDate($trabajo['Fecha_Creacion']); ?></p>
                     <p><strong>Precio Total:</strong> <?php echo formatCurrency($trabajo['Precio_Total']); ?></p>
                     
-                    <?php
-                    // Obtener costo de materiales
-                    $queryMateriales = "SELECT SUM(Subtotal) as total_materiales FROM TB_Trabajo_Inventario WHERE ID_Trabajo = :id";
-                    $stmtMateriales = $db->prepare($queryMateriales);
-                    $stmtMateriales->bindParam(':id', $id);
-                    $stmtMateriales->execute();
-                    $costoMateriales = $stmtMateriales->fetch(PDO::FETCH_ASSOC)['total_materiales'] ?? 0;
-                    ?>
-                    
-                    <hr>
-                    <h6>Desglose de Costos:</h6>
-                    <p><strong>Mano de Obra:</strong> <?php echo formatCurrency($trabajo['Precio_Mano_Obra']); ?></p>
-                    <p><strong>Materiales:</strong> <?php echo formatCurrency($costoMateriales); ?></p>
+                   
                 </div>
             </div>
 
@@ -268,9 +256,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="agregar_materiales.php?id=<?php echo $trabajo['ID_Trabajo']; ?>" class="btn btn-success">
-                            <i class="fas fa-plus"></i> Agregar Materiales
-                        </a>
+                       
                         
                         <?php if ($trabajo['Estado'] == 'Pendiente'): ?>
                         <button class="btn btn-info" onclick="cambiarEstadoRapido('En Proceso')">
@@ -289,30 +275,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </div>
             </div>
 
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Materiales Usados</h6>
-                </div>
-                <div class="card-body">
-                    <?php
-                    // Obtener materiales del trabajo
-                    $queryItems = "SELECT COUNT(*) as total_items FROM TB_Trabajo_Inventario WHERE ID_Trabajo = :id";
-                    $stmtItems = $db->prepare($queryItems);
-                    $stmtItems->bindParam(':id', $id);
-                    $stmtItems->execute();
-                    $totalItems = $stmtItems->fetch(PDO::FETCH_ASSOC)['total_items'];
-                    ?>
-                    
-                    <p><strong>Items utilizados:</strong> <?php echo number_format($totalItems); ?></p>
-                    <p><strong>Costo total materiales:</strong> <?php echo formatCurrency($costoMateriales); ?></p>
-                    
-                    <?php if ($totalItems > 0): ?>
-                    <a href="view.php?id=<?php echo $trabajo['ID_Trabajo']; ?>#materiales" class="btn btn-info btn-sm">
-                        <i class="fas fa-list"></i> Ver Detalle
-                    </a>
-                    <?php endif; ?>
-                </div>
-            </div>
+           
         </div>
     </div>
 </div>

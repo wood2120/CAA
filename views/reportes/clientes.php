@@ -8,21 +8,15 @@ requireLogin();
 checkSessionTimeout();
 
 $pageTitle = 'Reporte de Clientes';
-include '../../includes/header.php';
+
+$filtro_fecha = $_GET['fecha'] ?? '';
+$filtro_cliente = $_GET['cliente'] ?? '';
+$exportar = $_GET['exportar'] ?? '';
 
 try {
     $database = new Database();
     $db = $database->getConnection();
-    
-    $clienteModel = new Cliente($db);
-    $trabajoModel = new Trabajo($db);
-    
-    // Obtener filtros
-    $filtro_fecha = $_GET['fecha'] ?? '';
-    $filtro_cliente = $_GET['cliente'] ?? '';
-    $exportar = $_GET['exportar'] ?? '';
-    
-    // Consulta base para clientes con estadísticas
+
     $query = "SELECT 
                 c.Cedula,
                 c.Nombre,
@@ -36,90 +30,52 @@ try {
                 MAX(t.Fecha_Creacion) as ultimo_trabajo
               FROM TB_Clientes c
               LEFT JOIN TB_Trabajos t ON c.Cedula = t.Cedula_Cliente";
-    
-    $conditions = [];
-    $params = [];
-    
-    if (!empty($filtro_fecha)) {
-        $conditions[] = "DATE(t.Fecha_Creacion) >= :fecha";
-        $params[':fecha'] = $filtro_fecha;
-    }
-    
-    if (!empty($filtro_cliente)) {
-        $conditions[] = "(c.Nombre LIKE :cliente OR c.Cedula LIKE :cliente OR c.Empresa LIKE :cliente)";
-        $params[':cliente'] = "%{$filtro_cliente}%";
-    }
-    
-    if (!empty($conditions)) {
-        $query .= " WHERE " . implode(" AND ", $conditions);
-    }
-    
-    $query .= " GROUP BY c.Cedula, c.Nombre, c.Contacto, c.Empresa
-                ORDER BY ingresos_totales DESC, c.Nombre";
-    
+    $conditions=[]; $params=[];
+    if ($filtro_fecha!=='') { $conditions[]='DATE(t.Fecha_Creacion) >= :fecha'; $params[':fecha']=$filtro_fecha; }
+    if ($filtro_cliente!=='') { $conditions[]='(c.Nombre LIKE :cliente OR c.Cedula LIKE :cliente OR c.Empresa LIKE :cliente)'; $params[':cliente']="%$filtro_cliente%"; }
+    if ($conditions) { $query .= ' WHERE ' . implode(' AND ',$conditions);} 
+    $query .= ' GROUP BY c.Cedula, c.Nombre, c.Contacto, c.Empresa ORDER BY ingresos_totales DESC, c.Nombre';
     $stmt = $db->prepare($query);
-    foreach ($params as $key => $value) {
-        $stmt->bindValue($key, $value);
-    }
+    foreach ($params as $k=>$v) $stmt->bindValue($k,$v);
     $stmt->execute();
     $clientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Estadísticas generales
-    $stmt_stats = $db->query("SELECT 
-                                COUNT(*) as total_clientes,
-                                SUM(CASE WHEN ultimo_trabajo >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as clientes_activos
-                              FROM (
-                                SELECT c.Cedula, MAX(t.Fecha_Creacion) as ultimo_trabajo
-                                FROM TB_Clientes c
-                                LEFT JOIN TB_Trabajos t ON c.Cedula = t.Cedula_Cliente
-                                GROUP BY c.Cedula
-                              ) subquery");
-    $stats = $stmt_stats->fetch(PDO::FETCH_ASSOC);
-    
-    // Si se solicita exportación a CSV
-    if ($exportar === 'csv') {
+
+    if ($exportar==='csv') {
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename=reporte_clientes_' . date('Y-m-d') . '.csv');
-        
-        $output = fopen('php://output', 'w');
-        
-        // BOM para UTF-8
-        fwrite($output, "\xEF\xBB\xBF");
-        
-        // Encabezados
-        fputcsv($output, [
-            'Cedula', 'Nombre', 'Contacto', 'Empresa', 'Total_Trabajos', 
-            'Completados', 'Pendientes', 'En_Proceso', 'Ingresos_Totales', 'Ultimo_Trabajo'
-        ]);
-        
-        // Datos (sin formatear con separadores de miles para que Excel interprete como número)
-        foreach ($clientes as $cliente) {
-            $ultimo = $cliente['ultimo_trabajo'] ? date('Y-m-d', strtotime($cliente['ultimo_trabajo'])) : '';
-            $row = [
-                $cliente['Cedula'],
-                preg_replace("/[\r\n]+/", ' ', $cliente['Nombre']),
-                preg_replace("/[\r\n]+/", ' ', $cliente['Contacto']),
-                preg_replace("/[\r\n]+/", ' ', ($cliente['Empresa'] ?: '')),
-                (int)$cliente['total_trabajos'],
-                (int)$cliente['trabajos_completados'],
-                (int)$cliente['trabajos_pendientes'],
-                (int)$cliente['trabajos_proceso'],
-                // Usar punto decimal y sin separador de miles
-                number_format((float)$cliente['ingresos_totales'], 2, '.', ''),
-                $ultimo
-            ];
-            fputcsv($output, $row);
+        $out = fopen('php://output','w');
+        fwrite($out, "\xEF\xBB\xBF");
+        fputcsv($out, ['Cedula','Nombre','Contacto','Empresa','Total_Trabajos','Completados','Pendientes','En_Proceso','Ingresos_Totales','Ultimo_Trabajo']);
+        foreach ($clientes as $c) {
+            fputcsv($out, [
+                $c['Cedula'],
+                preg_replace('/[\r\n]+/',' ',$c['Nombre']),
+                preg_replace('/[\r\n]+/',' ',$c['Contacto']),
+                preg_replace('/[\r\n]+/',' ', ($c['Empresa']??'')),
+                (int)$c['total_trabajos'],
+                (int)$c['trabajos_completados'],
+                (int)$c['trabajos_pendientes'],
+                (int)$c['trabajos_proceso'],
+                number_format((float)$c['ingresos_totales'],2,'.',''),
+                $c['ultimo_trabajo'] ? date('Y-m-d', strtotime($c['ultimo_trabajo'])) : ''
+            ]);
         }
-        
-        fclose($output);
+        fclose($out);
         exit;
     }
-    
+
+    // Estadísticas solo para la vista
+    $stmt_stats = $db->query("SELECT COUNT(*) as total_clientes, SUM(CASE WHEN ultimo_trabajo >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as clientes_activos FROM ( SELECT c.Cedula, MAX(t.Fecha_Creacion) as ultimo_trabajo FROM TB_Clientes c LEFT JOIN TB_Trabajos t ON c.Cedula = t.Cedula_Cliente GROUP BY c.Cedula ) subquery");
+    $stats = $stmt_stats->fetch(PDO::FETCH_ASSOC);
+
 } catch (Exception $e) {
-    $error = "Error al generar el reporte: " . $e->getMessage();
+    $error = 'Error al generar el reporte: ' . $e->getMessage();
+    $clientes = [];
+    $stats = ['total_clientes'=>0,'clientes_activos'=>0];
 }
 
-logActivity($_SESSION['user_id'], "Generó reporte de clientes");
+include '../../includes/header.php';
+logActivity($_SESSION['user_id'], 'Generó reporte de clientes');
 ?>
 
 <div class="container-fluid">

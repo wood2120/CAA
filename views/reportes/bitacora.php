@@ -6,7 +6,7 @@ requireLogin();
 checkSessionTimeout();
 
 $pageTitle = 'Bitácora del Sistema';
-include '../../includes/header.php';
+// HEADER MOVED BELOW (after possible CSV export)
 
 try {
     $database = new Database();
@@ -23,13 +23,13 @@ try {
         $stmt = $bitacoraModel->readAll($limite);
     }
 
-    // Preparar datos si se exporta
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
     if ($exportar === 'csv') {
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename=bitacora_' . date('Y-m-d_H-i-s') . '.csv');
         $output = fopen('php://output', 'w');
-        fwrite($output, "\xEF\xBB\xBF"); // BOM
+        fwrite($output, "\xEF\xBB\xBF");
         fputcsv($output, ['ID_Bitacora','Fecha','Hora','Usuario','Accion']);
         foreach ($rows as $r) {
             fputcsv($output, [
@@ -46,19 +46,13 @@ try {
     
     // Obtener lista de usuarios para el filtro
     $usuariosStmt = $db->query("SELECT ID_Usuario, Usuario FROM TB_Usuarios ORDER BY Usuario");
-    // Reiniciar cursor de stmt para mostrar en tabla si no se exportó
-    if (!isset($rows)) {
-        if (!empty($usuario_filtro)) {
-            $stmt = $bitacoraModel->getByUsuario($usuario_filtro, $limite);
-        } else {
-            $stmt = $bitacoraModel->readAll($limite);
-        }
-    }
-    
+
 } catch (Exception $e) {
     $error = "Error al cargar bitácora: " . $e->getMessage();
+    $rows = [];
 }
 
+include '../../includes/header.php';
 logActivity($_SESSION['user_id'], "Acceso a bitácora del sistema");
 ?>
 
@@ -93,7 +87,7 @@ logActivity($_SESSION['user_id'], "Acceso a bitácora del sistema");
                     <label for="usuario" class="form-label">Usuario</label>
                     <select class="form-select" id="usuario" name="usuario">
                         <option value="">Todos los usuarios</option>
-                        <?php while ($user = $usuariosStmt->fetch(PDO::FETCH_ASSOC)): ?>
+                        <?php if (isset($usuariosStmt)) while ($user = $usuariosStmt->fetch(PDO::FETCH_ASSOC)): ?>
                         <option value="<?php echo $user['ID_Usuario']; ?>" 
                                 <?php echo ($usuario_filtro == $user['ID_Usuario']) ? 'selected' : ''; ?>>
                             <?php echo htmlspecialchars($user['Usuario']); ?>
@@ -136,7 +130,7 @@ logActivity($_SESSION['user_id'], "Acceso a bitácora del sistema");
             </h6>
         </div>
         <div class="card-body">
-            <?php if (isset($stmt) && $stmt->rowCount() > 0): ?>
+            <?php if (!empty($rows)): ?>
             <div class="table-responsive">
                 <table class="table table-bordered table-hover">
                     <thead class="table-light">
@@ -148,22 +142,22 @@ logActivity($_SESSION['user_id'], "Acceso a bitácora del sistema");
                         </tr>
                     </thead>
                     <tbody>
-                        <?php while ($row = $stmt->fetch(PDO::FETCH_ASSOC)): ?>
+                        <?php foreach ($rows as $r): ?>
                         <tr>
-                            <td><?php echo htmlspecialchars($row['ID_Bitacora']); ?></td>
+                            <td><?php echo htmlspecialchars($r['ID_Bitacora']); ?></td>
                             <td>
-                                <strong><?php echo date('d/m/Y', strtotime($row['Fecha_Hora'])); ?></strong>
+                                <strong><?php echo date('d/m/Y', strtotime($r['Fecha_Hora'])); ?></strong>
                                 <br>
-                                <small class="text-muted"><?php echo date('H:i:s', strtotime($row['Fecha_Hora'])); ?></small>
+                                <small class="text-muted"><?php echo date('H:i:s', strtotime($r['Fecha_Hora'])); ?></small>
                             </td>
                             <td>
                                 <span class="badge bg-primary">
-                                    <?php echo htmlspecialchars($row['Usuario'] ?? 'Usuario desconocido'); ?>
+                                    <?php echo htmlspecialchars($r['Usuario'] ?? 'Usuario desconocido'); ?>
                                 </span>
                             </td>
-                            <td><?php echo htmlspecialchars($row['Accion']); ?></td>
+                            <td><?php echo htmlspecialchars($r['Accion']); ?></td>
                         </tr>
-                        <?php endwhile; ?>
+                        <?php endforeach; ?>
                     </tbody>
                 </table>
             </div>
@@ -179,7 +173,6 @@ logActivity($_SESSION['user_id'], "Acceso a bitácora del sistema");
 </div>
 
 <script>
-// Auto-submit el formulario cuando cambian los filtros
 const usuarioSel = document.getElementById('usuario');
 if (usuarioSel) usuarioSel.addEventListener('change', function() { this.form.submit(); });
 const limiteSel = document.getElementById('limite');

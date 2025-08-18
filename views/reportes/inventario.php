@@ -9,7 +9,7 @@ requireLogin();
 checkSessionTimeout();
 
 $pageTitle = 'Reporte de Inventario';
-include '../../includes/header.php';
+// (HEADER MOVED BELOW AFTER POSIBLE CSV EXPORT)
 
 try {
     $database = new Database();
@@ -131,25 +131,20 @@ try {
     $categorias = $db->query("SELECT ID_Categoria, Nombre_Categoria as Nombre FROM TB_Categorias ORDER BY Nombre_Categoria")->fetchAll(PDO::FETCH_ASSOC);
     $proveedores = $db->query("SELECT ID_Proveedor, Nombre_Proveedor as Nombre FROM TB_Proveedores ORDER BY Nombre_Proveedor")->fetchAll(PDO::FETCH_ASSOC);
     
-    // Si se solicita exportación a CSV
+    // Si se solicita exportación a CSV (ANTES DE CARGAR HEADER PARA EVITAR HTML EN SALIDA)
     if ($exportar === 'csv') {
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename=reporte_inventario_' . date('Y-m-d') . '.csv');
         
         $output = fopen('php://output', 'w');
-        
-        // BOM UTF-8
-        fwrite($output, "\xEF\xBB\xBF");
-        
-        // Encabezados normalizados (sin espacios)
+        fwrite($output, "\xEF\xBB\xBF"); // BOM UTF-8
         fputcsv($output, [
             'ID_Item','Nombre','Descripcion','Categoria','Proveedor',
             'Stock_Actual','Stock_Minimo','Nivel_Stock','Precio_Unitario',
             'Valor_Total','Estado','Fecha_Ingreso'
         ]);
-        
         foreach ($items as $item) {
-            $row = [
+            fputcsv($output, [
                 $item['ID_Item'],
                 preg_replace("/[\r\n]+/", ' ', $item['Nombre_Item']),
                 preg_replace("/[\r\n]+/", ' ', $item['Descripcion']),
@@ -162,8 +157,7 @@ try {
                 number_format((float)$item['valor_total'], 2, '.', ''),
                 $item['Estado'],
                 $item['Fecha_Ultima_Actualizacion'] ? date('Y-m-d', strtotime($item['Fecha_Ultima_Actualizacion'])) : ''
-            ];
-            fputcsv($output, $row);
+            ]);
         }
         fclose($output);
         exit;
@@ -171,7 +165,6 @@ try {
     
 } catch (Exception $e) {
     $error = "Error al generar el reporte: " . $e->getMessage();
-    // Inicializar variables por defecto en caso de error
     $items = [];
     $stats = [
         'total_items' => 0,
@@ -185,6 +178,8 @@ try {
     $proveedores = [];
 }
 
+// Incluir header solo después de posible exportación
+include '../../includes/header.php';
 logActivity($_SESSION['user_id'], "Generó reporte de inventario");
 ?>
 

@@ -8,34 +8,30 @@ requireLogin();
 checkSessionTimeout();
 
 $pageTitle = 'Gestión de Trabajos';
-include '../../includes/header.php';
+
+$searchTerm = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
+$exportar = $_GET['exportar'] ?? '';
 
 try {
     $database = new Database();
     $db = $database->getConnection();
     $trabajoModel = new Trabajo($db);
-    
-    $searchTerm = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
-    $exportar = $_GET['exportar'] ?? '';
-    
+
     if (!empty($searchTerm)) {
         $stmt = $trabajoModel->search($searchTerm);
     } else {
         $stmt = $trabajoModel->readAll();
     }
-    // Obtener todos los registros para reutilizar (tabla y posible exportación)
     $trabajos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Exportación CSV limpia (evita desalineación por HTML interno)
+    // Exportación CSV ANTES de incluir cualquier HTML/header
     if ($exportar === 'csv') {
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename=trabajos_' . date('Y-m-d') . '.csv');
         $out = fopen('php://output', 'w');
         fwrite($out, "\xEF\xBB\xBF"); // BOM UTF-8
-        // Encabezados normalizados
         fputcsv($out, ['ID_Trabajo','Cliente','Cedula_Cliente','Tipo_Trabajo','Precio','Fecha_Inicio','Fecha_Final']);
         foreach ($trabajos as $t) {
-            // Campos variables según consulta del modelo
             $clienteNombre = $t['cliente_nombre'] ?? ($t['NombreCliente'] ?? '');
             $cedula = $t['Cedula_Cliente'] ?? ($t['Cedula'] ?? '');
             $precioRaw = $t['Precio'] ?? ($t['Precio_Total'] ?? 0);
@@ -50,13 +46,16 @@ try {
             ]);
         }
         fclose($out);
-        exit;
+        exit; // impedir que se imprima el DOCTYPE / resto HTML
     }
-    
+
 } catch (Exception $e) {
     $error = "Error al cargar trabajos: " . $e->getMessage();
     $trabajos = [];
 }
+
+// Incluir header SOLO si no es exportación
+include '../../includes/header.php';
 
 logActivity($_SESSION['user_id'], "Acceso a gestión de trabajos");
 ?>

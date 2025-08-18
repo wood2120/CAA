@@ -8,23 +8,18 @@ requireLogin();
 checkSessionTimeout();
 
 $pageTitle = 'Reporte de Trabajos';
-include '../../includes/header.php';
+
+$filtro_fecha_inicio = $_GET['fecha_inicio'] ?? '';
+$filtro_fecha_fin = $_GET['fecha_fin'] ?? '';
+$filtro_estado = $_GET['estado'] ?? '';
+$filtro_cliente = $_GET['cliente'] ?? '';
+$exportar = $_GET['exportar'] ?? '';
 
 try {
     $database = new Database();
     $db = $database->getConnection();
     
-    $trabajoModel = new Trabajo($db);
-    $clienteModel = new Cliente($db);
-    
-    // Obtener filtros
-    $filtro_fecha_inicio = $_GET['fecha_inicio'] ?? '';
-    $filtro_fecha_fin = $_GET['fecha_fin'] ?? '';
-    $filtro_estado = $_GET['estado'] ?? '';
-    $filtro_cliente = $_GET['cliente'] ?? '';
-    $exportar = $_GET['exportar'] ?? '';
-    
-    // Consulta base para trabajos
+    // Construir consulta
     $query = "SELECT 
                 t.ID_Trabajo,
                 t.Descripcion,
@@ -38,50 +33,52 @@ try {
                 c.Nombre as nombre_cliente,
                 c.Cedula as cedula_cliente,
                 c.Empresa,
-                DATEDIFF(
-                    COALESCE(t.Fecha_Final, CURRENT_DATE), 
-                    t.Fecha_Creacion
-                ) as dias_duracion
+                DATEDIFF(COALESCE(t.Fecha_Final, CURRENT_DATE), t.Fecha_Creacion) as dias_duracion
               FROM TB_Trabajos t
               LEFT JOIN TB_Clientes c ON t.Cedula_Cliente = c.Cedula";
-    
     $conditions = [];
     $params = [];
-    
-    if (!empty($filtro_fecha_inicio)) {
-        $conditions[] = "DATE(t.Fecha_Creacion) >= :fecha_inicio";
-        $params[':fecha_inicio'] = $filtro_fecha_inicio;
-    }
-    
-    if (!empty($filtro_fecha_fin)) {
-        $conditions[] = "DATE(t.Fecha_Creacion) <= :fecha_fin";
-        $params[':fecha_fin'] = $filtro_fecha_fin;
-    }
-    
-    if (!empty($filtro_estado)) {
-        $conditions[] = "t.Estado = :estado";
-        $params[':estado'] = $filtro_estado;
-    }
-    
-    if (!empty($filtro_cliente)) {
-        $conditions[] = "(c.Nombre LIKE :cliente OR c.Cedula LIKE :cliente OR c.Empresa LIKE :cliente)";
-        $params[':cliente'] = "%{$filtro_cliente}%";
-    }
-    
-    if (!empty($conditions)) {
-        $query .= " WHERE " . implode(" AND ", $conditions);
-    }
-    
-    $query .= " ORDER BY t.Fecha_Creacion DESC";
-    
+
+    if ($filtro_fecha_inicio !== '') { $conditions[] = 'DATE(t.Fecha_Creacion) >= :fecha_inicio'; $params[':fecha_inicio'] = $filtro_fecha_inicio; }
+    if ($filtro_fecha_fin !== '') { $conditions[] = 'DATE(t.Fecha_Creacion) <= :fecha_fin'; $params[':fecha_fin'] = $filtro_fecha_fin; }
+    if ($filtro_estado !== '') { $conditions[] = 't.Estado = :estado'; $params[':estado'] = $filtro_estado; }
+    if ($filtro_cliente !== '') { $conditions[] = '(c.Nombre LIKE :cliente OR c.Cedula LIKE :cliente OR c.Empresa LIKE :cliente)'; $params[':cliente'] = "%$filtro_cliente%"; }
+    if ($conditions) { $query .= ' WHERE ' . implode(' AND ', $conditions); }
+    $query .= ' ORDER BY t.Fecha_Creacion DESC';
+
     $stmt = $db->prepare($query);
-    foreach ($params as $key => $value) {
-        $stmt->bindValue($key, $value);
-    }
+    foreach ($params as $k=>$v) { $stmt->bindValue($k,$v); }
     $stmt->execute();
     $trabajos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Estadísticas
+
+    if ($exportar === 'csv') {
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=reporte_trabajos_' . date('Y-m-d') . '.csv');
+        $out = fopen('php://output','w');
+        fwrite($out, "\xEF\xBB\xBF");
+        fputcsv($out, ['ID_Trabajo','Cliente','Cedula_Cliente','Empresa','Tipo_Trabajo','Descripcion','Estado','Fecha_Creacion','Fecha_Inicio','Fecha_Final','Dias_Duracion','Precio_Mano_Obra','Precio_Total']);
+        foreach ($trabajos as $t) {
+            fputcsv($out, [
+                $t['ID_Trabajo'],
+                preg_replace('/[\r\n]+/',' ', $t['nombre_cliente']),
+                $t['cedula_cliente'],
+                preg_replace('/[\r\n]+/',' ', $t['Empresa']),
+                preg_replace('/[\r\n]+/',' ', $t['Tipo_Trabajo']),
+                preg_replace('/[\r\n]+/',' ', $t['Descripcion']),
+                $t['Estado'],
+                date('Y-m-d', strtotime($t['Fecha_Creacion'])),
+                $t['Fecha_Inicio'] ? date('Y-m-d', strtotime($t['Fecha_Inicio'])) : '',
+                $t['Fecha_Final'] ? date('Y-m-d', strtotime($t['Fecha_Final'])) : '',
+                (int)$t['dias_duracion'],
+                number_format((float)($t['Precio_Mano_Obra']??0), 2, '.', ''),
+                number_format((float)($t['Precio_Total']??0), 2, '.', '')
+            ]);
+        }
+        fclose($out);
+        exit;
+    }
+
+    // Estadísticas (solo si no exporta)
     $stats_query = "SELECT 
                       COUNT(*) as total_trabajos,
                       SUM(CASE WHEN Estado = 'Pendiente' THEN 1 ELSE 0 END) as pendientes,
@@ -91,88 +88,30 @@ try {
                       COALESCE(AVG(Precio_Total), 0) as precio_promedio,
                       COALESCE(AVG(DATEDIFF(COALESCE(Fecha_Final, CURRENT_DATE), Fecha_Creacion)), 0) as duracion_promedio
                     FROM TB_Trabajos t";
-    
-    if (!empty($conditions)) {
-        $stats_query .= " LEFT JOIN TB_Clientes c ON t.Cedula_Cliente = c.Cedula WHERE " . implode(" AND ", $conditions);
+    if ($conditions) {
+        $stats_query .= ' LEFT JOIN TB_Clientes c ON t.Cedula_Cliente = c.Cedula WHERE ' . implode(' AND ', $conditions);
         $stmt_stats = $db->prepare($stats_query);
-        foreach ($params as $key => $value) {
-            $stmt_stats->bindValue($key, $value);
-        }
+        foreach ($params as $k=>$v) { $stmt_stats->bindValue($k,$v);} 
         $stmt_stats->execute();
     } else {
         $stmt_stats = $db->query($stats_query);
     }
-    
-    $stats = $stmt_stats->fetch(PDO::FETCH_ASSOC);
-    
-    // Asegurar que stats tenga valores por defecto si hay error
-    if (!$stats) {
-        $stats = [
-            'total_trabajos' => 0,
-            'pendientes' => 0,
-            'en_proceso' => 0,
-            'completados' => 0,
-            'ingresos_totales' => 0,
-            'precio_promedio' => 0,
-            'duracion_promedio' => 0
-        ];
-    }
-    
-    // Si se solicita exportación a CSV
-    if ($exportar === 'csv') {
-        header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename=reporte_trabajos_' . date('Y-m-d') . '.csv');
-        
-        $output = fopen('php://output', 'w');
-        
-        // BOM para UTF-8
-        fwrite($output, "\xEF\xBB\xBF");
-        
-        // Encabezados (sin espacios y con guiones bajos para compatibilidad)
-        fputcsv($output, [
-            'ID_Trabajo', 'Cliente', 'Cedula_Cliente', 'Empresa', 'Tipo_Trabajo', 'Descripcion', 
-            'Estado', 'Fecha_Creacion', 'Fecha_Inicio', 'Fecha_Final', 'Dias_Duracion', 'Precio_Mano_Obra', 'Precio_Total'
-        ]);
-        
-        foreach ($trabajos as $trabajo) {
-            $row = [
-                $trabajo['ID_Trabajo'],
-                preg_replace("/[\r\n]+/", ' ', $trabajo['nombre_cliente']),
-                $trabajo['cedula_cliente'],
-                preg_replace("/[\r\n]+/", ' ', ($trabajo['Empresa'] ?: '')),
-                preg_replace("/[\r\n]+/", ' ', $trabajo['Tipo_Trabajo']),
-                preg_replace("/[\r\n]+/", ' ', $trabajo['Descripcion']),
-                $trabajo['Estado'],
-                date('Y-m-d', strtotime($trabajo['Fecha_Creacion'])),
-                $trabajo['Fecha_Inicio'] ? date('Y-m-d', strtotime($trabajo['Fecha_Inicio'])) : '',
-                $trabajo['Fecha_Final'] ? date('Y-m-d', strtotime($trabajo['Fecha_Final'])) : '',
-                (int)$trabajo['dias_duracion'],
-                number_format((float)($trabajo['Precio_Mano_Obra'] ?? 0), 2, '.', ''),
-                number_format((float)($trabajo['Precio_Total'] ?? 0), 2, '.', '')
-            ];
-            fputcsv($output, $row);
-        }
-        
-        fclose($output);
-        exit;
-    }
-    
+    $stats = $stmt_stats->fetch(PDO::FETCH_ASSOC) ?: [
+        'total_trabajos'=>0,'pendientes'=>0,'en_proceso'=>0,'completados'=>0,
+        'ingresos_totales'=>0,'precio_promedio'=>0,'duracion_promedio'=>0
+    ];
+
 } catch (Exception $e) {
-    $error = "Error al generar el reporte: " . $e->getMessage();
-    // Inicializar variables por defecto en caso de error
+    $error = 'Error al generar el reporte: ' . $e->getMessage();
     $trabajos = [];
     $stats = [
-        'total_trabajos' => 0,
-        'pendientes' => 0,
-        'en_proceso' => 0,
-        'completados' => 0,
-        'ingresos_totales' => 0,
-        'precio_promedio' => 0,
-        'duracion_promedio' => 0
+        'total_trabajos'=>0,'pendientes'=>0,'en_proceso'=>0,'completados'=>0,
+        'ingresos_totales'=>0,'precio_promedio'=>0,'duracion_promedio'=>0
     ];
 }
 
-logActivity($_SESSION['user_id'], "Generó reporte de trabajos");
+include '../../includes/header.php';
+logActivity($_SESSION['user_id'], 'Generó reporte de trabajos');
 ?>
 
 <div class="container-fluid">

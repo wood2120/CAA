@@ -88,24 +88,27 @@ try {
         
         // Encabezados
         fputcsv($output, [
-            'Cédula', 'Nombre', 'Contacto', 'Empresa', 'Total Trabajos', 
-            'Completados', 'Pendientes', 'En Proceso', 'Ingresos Totales', 'Último Trabajo'
+            'Cedula', 'Nombre', 'Contacto', 'Empresa', 'Total_Trabajos', 
+            'Completados', 'Pendientes', 'En_Proceso', 'Ingresos_Totales', 'Ultimo_Trabajo'
         ]);
         
-        // Datos
+        // Datos (sin formatear con separadores de miles para que Excel interprete como número)
         foreach ($clientes as $cliente) {
-            fputcsv($output, [
+            $ultimo = $cliente['ultimo_trabajo'] ? date('Y-m-d', strtotime($cliente['ultimo_trabajo'])) : '';
+            $row = [
                 $cliente['Cedula'],
-                $cliente['Nombre'],
-                $cliente['Contacto'],
-                $cliente['Empresa'],
-                $cliente['total_trabajos'],
-                $cliente['trabajos_completados'],
-                $cliente['trabajos_pendientes'],
-                $cliente['trabajos_proceso'],
-                number_format($cliente['ingresos_totales'], 2),
-                $cliente['ultimo_trabajo'] ? date('d/m/Y', strtotime($cliente['ultimo_trabajo'])) : 'Nunca'
-            ]);
+                preg_replace("/[\r\n]+/", ' ', $cliente['Nombre']),
+                preg_replace("/[\r\n]+/", ' ', $cliente['Contacto']),
+                preg_replace("/[\r\n]+/", ' ', ($cliente['Empresa'] ?: '')),
+                (int)$cliente['total_trabajos'],
+                (int)$cliente['trabajos_completados'],
+                (int)$cliente['trabajos_pendientes'],
+                (int)$cliente['trabajos_proceso'],
+                // Usar punto decimal y sin separador de miles
+                number_format((float)$cliente['ingresos_totales'], 2, '.', ''),
+                $ultimo
+            ];
+            fputcsv($output, $row);
         }
         
         fclose($output);

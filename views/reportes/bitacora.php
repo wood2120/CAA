@@ -15,15 +15,45 @@ try {
     
     $limite = isset($_GET['limite']) ? (int)$_GET['limite'] : 100;
     $usuario_filtro = isset($_GET['usuario']) ? (int)$_GET['usuario'] : '';
+    $exportar = $_GET['exportar'] ?? '';
     
     if (!empty($usuario_filtro)) {
         $stmt = $bitacoraModel->getByUsuario($usuario_filtro, $limite);
     } else {
         $stmt = $bitacoraModel->readAll($limite);
     }
+
+    // Preparar datos si se exporta
+    if ($exportar === 'csv') {
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=bitacora_' . date('Y-m-d_H-i-s') . '.csv');
+        $output = fopen('php://output', 'w');
+        fwrite($output, "\xEF\xBB\xBF"); // BOM
+        fputcsv($output, ['ID_Bitacora','Fecha','Hora','Usuario','Accion']);
+        foreach ($rows as $r) {
+            fputcsv($output, [
+                $r['ID_Bitacora'],
+                date('Y-m-d', strtotime($r['Fecha_Hora'])),
+                date('H:i:s', strtotime($r['Fecha_Hora'])),
+                $r['Usuario'] ?? 'Desconocido',
+                preg_replace("/[\r\n]+/", ' ', $r['Accion'])
+            ]);
+        }
+        fclose($output);
+        exit;
+    }
     
     // Obtener lista de usuarios para el filtro
     $usuariosStmt = $db->query("SELECT ID_Usuario, Usuario FROM TB_Usuarios ORDER BY Usuario");
+    // Reiniciar cursor de stmt para mostrar en tabla si no se exportó
+    if (!isset($rows)) {
+        if (!empty($usuario_filtro)) {
+            $stmt = $bitacoraModel->getByUsuario($usuario_filtro, $limite);
+        } else {
+            $stmt = $bitacoraModel->readAll($limite);
+        }
+    }
     
 } catch (Exception $e) {
     $error = "Error al cargar bitácora: " . $e->getMessage();
@@ -37,9 +67,14 @@ logActivity($_SESSION['user_id'], "Acceso a bitácora del sistema");
         <h1 class="h3 mb-0 text-gray-800">
             <i class="fas fa-history"></i> Bitácora del Sistema
         </h1>
-        <a href="index.php" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Volver a Reportes
-        </a>
+        <div class="btn-group">
+            <a href="?exportar=csv<?php echo $usuario_filtro ? '&usuario=' . $usuario_filtro : ''; ?><?php echo $limite ? '&limite=' . $limite : ''; ?>" class="btn btn-success btn-sm">
+                <i class="fas fa-file-csv"></i> Exportar CSV
+            </a>
+            <a href="index.php" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left"></i> Volver a Reportes
+            </a>
+        </div>
     </div>
 
     <?php if (isset($error)): ?>
@@ -132,14 +167,6 @@ logActivity($_SESSION['user_id'], "Acceso a bitácora del sistema");
                     </tbody>
                 </table>
             </div>
-            
-            <div class="mt-3">
-                <small class="text-muted">
-                    <i class="fas fa-info-circle"></i> 
-                    Mostrando los últimos <?php echo $limite; ?> registros de actividad del sistema.
-                </small>
-            </div>
-            
             <?php else: ?>
             <div class="text-center py-4">
                 <i class="fas fa-history fa-3x text-muted mb-3"></i>
@@ -153,13 +180,10 @@ logActivity($_SESSION['user_id'], "Acceso a bitácora del sistema");
 
 <script>
 // Auto-submit el formulario cuando cambian los filtros
-document.getElementById('usuario').addEventListener('change', function() {
-    this.form.submit();
-});
-
-document.getElementById('limite').addEventListener('change', function() {
-    this.form.submit();
-});
+const usuarioSel = document.getElementById('usuario');
+if (usuarioSel) usuarioSel.addEventListener('change', function() { this.form.submit(); });
+const limiteSel = document.getElementById('limite');
+if (limiteSel) limiteSel.addEventListener('change', function() { this.form.submit(); });
 </script>
 
 <?php include '../../includes/footer.php'; ?>

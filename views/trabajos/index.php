@@ -16,15 +16,46 @@ try {
     $trabajoModel = new Trabajo($db);
     
     $searchTerm = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
+    $exportar = $_GET['exportar'] ?? '';
     
     if (!empty($searchTerm)) {
         $stmt = $trabajoModel->search($searchTerm);
     } else {
         $stmt = $trabajoModel->readAll();
     }
+    // Obtener todos los registros para reutilizar (tabla y posible exportación)
+    $trabajos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Exportación CSV limpia (evita desalineación por HTML interno)
+    if ($exportar === 'csv') {
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=trabajos_' . date('Y-m-d') . '.csv');
+        $out = fopen('php://output', 'w');
+        fwrite($out, "\xEF\xBB\xBF"); // BOM UTF-8
+        // Encabezados normalizados
+        fputcsv($out, ['ID_Trabajo','Cliente','Cedula_Cliente','Tipo_Trabajo','Precio','Fecha_Inicio','Fecha_Final']);
+        foreach ($trabajos as $t) {
+            // Campos variables según consulta del modelo
+            $clienteNombre = $t['cliente_nombre'] ?? ($t['NombreCliente'] ?? '');
+            $cedula = $t['Cedula_Cliente'] ?? ($t['Cedula'] ?? '');
+            $precioRaw = $t['Precio'] ?? ($t['Precio_Total'] ?? 0);
+            fputcsv($out, [
+                $t['ID_Trabajo'] ?? '',
+                preg_replace("/[\r\n]+/", ' ', $clienteNombre),
+                $cedula,
+                preg_replace("/[\r\n]+/", ' ', ($t['Tipo_Trabajo'] ?? '')),
+                number_format((float)$precioRaw, 2, '.', ''),
+                !empty($t['Fecha_Inicio']) ? date('Y-m-d', strtotime($t['Fecha_Inicio'])) : '',
+                !empty($t['Fecha_Final']) ? date('Y-m-d', strtotime($t['Fecha_Final'])) : ''
+            ]);
+        }
+        fclose($out);
+        exit;
+    }
     
 } catch (Exception $e) {
     $error = "Error al cargar trabajos: " . $e->getMessage();
+    $trabajos = [];
 }
 
 logActivity($_SESSION['user_id'], "Acceso a gestión de trabajos");
@@ -81,9 +112,9 @@ logActivity($_SESSION['user_id'], "Acceso a gestión de trabajos");
                         <a href="index.php" class="btn btn-outline-secondary">
                             <i class="fas fa-times"></i> Limpiar
                         </a>
-                        <button type="button" class="btn btn-outline-success" onclick="exportTable()">
-                            <i class="fas fa-download"></i> Exportar
-                        </button>
+                        <a href="?exportar=csv<?php echo $searchTerm ? '&search=' . urlencode($searchTerm) : ''; ?>" class="btn btn-outline-success">
+                            <i class="fas fa-file-csv"></i> Exportar CSV
+                        </a>
                     </div>
                 </div>
             </form>
@@ -100,7 +131,7 @@ logActivity($_SESSION['user_id'], "Acceso a gestión de trabajos");
             </h6>
         </div>
         <div class="card-body">
-            <?php if (isset($stmt) && $stmt->rowCount() > 0): ?>
+            <?php if (!empty($trabajos)): ?>
             <div class="table-responsive">
                 <table class="table table-bordered table-hover" id="trabajosTable">
                     <thead class="table-light">
@@ -115,7 +146,7 @@ logActivity($_SESSION['user_id'], "Acceso a gestión de trabajos");
                         </tr>
                     </thead>
                     <tbody>
-                        <?php while ($row = $stmt->fetch(PDO::FETCH_ASSOC)): ?>
+                        <?php foreach ($trabajos as $row): ?>
                         <tr>
                             <td><?php echo htmlspecialchars($row['ID_Trabajo']); ?></td>
                             <td>
@@ -154,7 +185,7 @@ logActivity($_SESSION['user_id'], "Acceso a gestión de trabajos");
                                 </div>
                             </td>
                         </tr>
-                        <?php endwhile; ?>
+                        <?php endforeach; ?>
                     </tbody>
                 </table>
             </div>
@@ -176,33 +207,26 @@ logActivity($_SESSION['user_id'], "Acceso a gestión de trabajos");
 </div>
 
 <script>
+// Eliminada función exportTable (servidor genera CSV limpio)
 function deleteTrabajo(id, tipo) {
     if (SistemaKris.confirmDelete(`¿Está seguro de que desea eliminar el trabajo "${tipo}"?\n\nEsta acción no se puede deshacer.`)) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = 'delete.php';
-        
         const idInput = document.createElement('input');
         idInput.type = 'hidden';
         idInput.name = 'id_trabajo';
         idInput.value = id;
-        
         form.appendChild(idInput);
         document.body.appendChild(form);
         form.submit();
     }
 }
 
-function exportTable() {
-    Utils.exportTableToCSV('trabajosTable', 'trabajos_' + new Date().toISOString().slice(0,10) + '.csv');
-}
-
 document.addEventListener('DOMContentLoaded', function() {
     SistemaKris.initDataTable('trabajosTable', {
         order: [[4, 'desc']],
-        columnDefs: [
-            { orderable: false, targets: [6] }
-        ]
+        columnDefs: [ { orderable: false, targets: [6] } ]
     });
 });
 </script>

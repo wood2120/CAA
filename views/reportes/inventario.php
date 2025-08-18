@@ -138,34 +138,33 @@ try {
         
         $output = fopen('php://output', 'w');
         
-        // BOM para UTF-8
+        // BOM UTF-8
         fwrite($output, "\xEF\xBB\xBF");
         
-        // Encabezados
+        // Encabezados normalizados (sin espacios)
         fputcsv($output, [
-            'ID Item', 'Nombre', 'Descripción', 'Categoría', 'Proveedor', 
-            'Stock Actual', 'Stock Mínimo', 'Nivel Stock', 'Precio Unitario', 
-            'Valor Total', 'Estado', 'Fecha Ingreso'
+            'ID_Item','Nombre','Descripcion','Categoria','Proveedor',
+            'Stock_Actual','Stock_Minimo','Nivel_Stock','Precio_Unitario',
+            'Valor_Total','Estado','Fecha_Ingreso'
         ]);
         
-        // Datos
         foreach ($items as $item) {
-            fputcsv($output, [
+            $row = [
                 $item['ID_Item'],
-                $item['Nombre_Item'],
-                $item['Descripcion'],
-                $item['categoria_nombre'],
-                $item['proveedor_nombre'],
-                $item['Cantidad_Stock'],
-                $item['Stock_Minimo'],
+                preg_replace("/[\r\n]+/", ' ', $item['Nombre_Item']),
+                preg_replace("/[\r\n]+/", ' ', $item['Descripcion']),
+                preg_replace("/[\r\n]+/", ' ', ($item['categoria_nombre'] ?? '')),
+                preg_replace("/[\r\n]+/", ' ', ($item['proveedor_nombre'] ?? '')),
+                (int)$item['Cantidad_Stock'],
+                (int)$item['Stock_Minimo'],
                 $item['nivel_stock'],
-                number_format($item['Precio_Unitario'], 2),
-                number_format($item['valor_total'], 2),
+                number_format((float)$item['Precio_Unitario'], 2, '.', ''),
+                number_format((float)$item['valor_total'], 2, '.', ''),
                 $item['Estado'],
-                date('d/m/Y', strtotime($item['Fecha_Ultima_Actualizacion']))
-            ]);
+                $item['Fecha_Ultima_Actualizacion'] ? date('Y-m-d', strtotime($item['Fecha_Ultima_Actualizacion'])) : ''
+            ];
+            fputcsv($output, $row);
         }
-        
         fclose($output);
         exit;
     }

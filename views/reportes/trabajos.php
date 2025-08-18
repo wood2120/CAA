@@ -128,29 +128,29 @@ try {
         // BOM para UTF-8
         fwrite($output, "\xEF\xBB\xBF");
         
-        // Encabezados
+        // Encabezados (sin espacios y con guiones bajos para compatibilidad)
         fputcsv($output, [
-            'ID Trabajo', 'Cliente', 'Cédula Cliente', 'Empresa', 'Tipo Trabajo', 'Descripción', 
-            'Estado', 'Fecha Creación', 'Fecha Inicio', 'Fecha Final', 'Días Duración', 'Precio Mano Obra', 'Precio Total'
+            'ID_Trabajo', 'Cliente', 'Cedula_Cliente', 'Empresa', 'Tipo_Trabajo', 'Descripcion', 
+            'Estado', 'Fecha_Creacion', 'Fecha_Inicio', 'Fecha_Final', 'Dias_Duracion', 'Precio_Mano_Obra', 'Precio_Total'
         ]);
         
-        // Datos
         foreach ($trabajos as $trabajo) {
-            fputcsv($output, [
+            $row = [
                 $trabajo['ID_Trabajo'],
-                $trabajo['nombre_cliente'],
+                preg_replace("/[\r\n]+/", ' ', $trabajo['nombre_cliente']),
                 $trabajo['cedula_cliente'],
-                $trabajo['Empresa'],
-                $trabajo['Tipo_Trabajo'],
-                $trabajo['Descripcion'],
+                preg_replace("/[\r\n]+/", ' ', ($trabajo['Empresa'] ?: '')),
+                preg_replace("/[\r\n]+/", ' ', $trabajo['Tipo_Trabajo']),
+                preg_replace("/[\r\n]+/", ' ', $trabajo['Descripcion']),
                 $trabajo['Estado'],
-                date('d/m/Y', strtotime($trabajo['Fecha_Creacion'])),
-                $trabajo['Fecha_Inicio'] ? date('d/m/Y', strtotime($trabajo['Fecha_Inicio'])) : 'No definida',
-                $trabajo['Fecha_Final'] ? date('d/m/Y', strtotime($trabajo['Fecha_Final'])) : 'No finalizado',
-                $trabajo['dias_duracion'],
-                number_format($trabajo['Precio_Mano_Obra'] ?? 0, 2),
-                number_format($trabajo['Precio_Total'] ?? 0, 2)
-            ]);
+                date('Y-m-d', strtotime($trabajo['Fecha_Creacion'])),
+                $trabajo['Fecha_Inicio'] ? date('Y-m-d', strtotime($trabajo['Fecha_Inicio'])) : '',
+                $trabajo['Fecha_Final'] ? date('Y-m-d', strtotime($trabajo['Fecha_Final'])) : '',
+                (int)$trabajo['dias_duracion'],
+                number_format((float)($trabajo['Precio_Mano_Obra'] ?? 0), 2, '.', ''),
+                number_format((float)($trabajo['Precio_Total'] ?? 0), 2, '.', '')
+            ];
+            fputcsv($output, $row);
         }
         
         fclose($output);

@@ -368,26 +368,41 @@ logActivity($_SESSION['user_id'], "Generó reporte de inventario");
     <!-- Gráficos -->
     <div class="row mb-4">
         <div class="col-lg-6">
-            <div class="card shadow">
-                <div class="card-header py-3">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 font-weight-bold text-primary">
                         <i class="fas fa-chart-pie"></i> Distribución por Nivel de Stock
                     </h6>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-secondary" type="button" onclick="downloadChart('stockChart','distribucion_stock.png')" title="Descargar PNG"><i class="fas fa-download"></i></button>
+                        <button class="btn btn-outline-secondary" type="button" onclick="toggleDoughnut()" title="Cambiar vista"><i class="fas fa-sync"></i></button>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <canvas id="stockChart"></canvas>
+                    <div class="row">
+                        <div class="col-7"><canvas id="stockChart" style="height:260px"></canvas></div>
+                        <div class="col-5">
+                            <ul class="list-group small" id="stockStats"></ul>
+                            <div class="mt-3 text-muted small" id="stockSummary"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-6">
-            <div class="card shadow">
-                <div class="card-header py-3">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 font-weight-bold text-primary">
                         <i class="fas fa-chart-bar"></i> Top 10 Items por Valor
                     </h6>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-secondary" type="button" onclick="downloadChart('valorChart','top_valor.png')" title="Descargar PNG"><i class="fas fa-download"></i></button>
+                        <button class="btn btn-outline-secondary" type="button" onclick="toggleValorScale()" title="Cambiar escala"><i class="fas fa-arrows-alt-v"></i></button>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <canvas id="valorChart"></canvas>
+                    <canvas id="valorChart" style="height:300px"></canvas>
+                    <div class="mt-3 small" id="topValorResumen"></div>
                 </div>
             </div>
         </div>
@@ -561,6 +576,121 @@ $(document).ready(function() {
         }
     });
 });
+</script>
+
+<script>
+(function(){
+    // Contar niveles de stock en PHP -> ya están en $items, usamos inline counts
+    const stockNormal = <?php echo count(array_filter($items, function($item) { return $item['nivel_stock'] === 'Normal'; })); ?>;
+    const stockBajo = <?php echo count(array_filter($items, function($item) { return $item['nivel_stock'] === 'Bajo'; })); ?>;
+    const stockCritico = <?php echo count(array_filter($items, function($item) { return $item['nivel_stock'] === 'Crítico'; })); ?>;
+    const totalItems = stockNormal + stockBajo + stockCritico;
+
+    // Distribución por nivel de stock
+    const ctxStock = document.getElementById('stockChart').getContext('2d');
+    let stockChartType = 'doughnut';
+    const stockChart = new Chart(ctxStock, {
+        type: stockChartType,
+        data: {
+            labels: ['Normal ('+stockNormal+')', 'Bajo ('+stockBajo+')', 'Crítico ('+stockCritico+')'],
+            datasets: [{
+                data: [stockNormal, stockBajo, stockCritico],
+                backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: { callbacks: { label: (ctx) => {
+                    const val = ctx.parsed; const pct = totalItems? ((val/totalItems)*100).toFixed(1):0; return ctx.label+': '+val+' ('+pct+'%)'; } } },
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+
+    function renderStockStats(){
+        const list = document.getElementById('stockStats');
+        const summary = document.getElementById('stockSummary');
+        if(!list) return;
+        list.innerHTML = '';
+        const data = [
+            {label:'Normal', val:stockNormal, color:'#28a745'},
+            {label:'Bajo', val:stockBajo, color:'#ffc107'},
+            {label:'Crítico', val:stockCritico, color:'#dc3545'}
+        ];
+        data.forEach(d=>{
+            const pct = totalItems? ((d.val/totalItems)*100).toFixed(1):0;
+            const li = document.createElement('li');
+            li.className='list-group-item d-flex justify-content-between align-items-center';
+            li.innerHTML = `<span><span class="badge" style="background:${d.color}">&nbsp;</span> ${d.label}</span><span>${d.val} (${pct}%)</span>`;
+            list.appendChild(li);
+        });
+        summary.textContent = 'Total analizado: '+ totalItems + ' items';
+    }
+    renderStockStats();
+
+    window.toggleDoughnut = function(){
+        stockChartType = stockChartType === 'doughnut' ? 'pie' : 'doughnut';
+        stockChart.destroy();
+        const newChart = new Chart(ctxStock, { type: stockChartType, data: stockChart.data, options: stockChart.options });
+        window.stockChart = newChart;
+    }
+
+    // Top 10 por valor (ordenado en PHP por valor descendente)
+})();
+</script>
+<?php
+// Insertar PHP para top 10 ordenado antes del bloque JS final (manteniendo lógica existente)
+$__topValor = $items;
+usort($__topValor, function($a,$b){ return ($b['valor_total'] <=> $a['valor_total']); });
+$__topValor = array_slice($__topValor,0,10);
+?>
+<script>
+(function(){
+    const topItems = <?php echo json_encode(array_map(function($item){ return [
+        'nombre' => (strlen($item['Nombre_Item'])>30? substr($item['Nombre_Item'],0,30).'...':$item['Nombre_Item']),
+        'valor' => (float)$item['valor_total']
+    ]; }, $__topValor)); ?>;
+    const totalTop = topItems.reduce((s,i)=>s+i.valor,0);
+    const ctxValor = document.getElementById('valorChart').getContext('2d');
+    let logScale = false;
+    const valorChart = new Chart(ctxValor, {
+        type: 'bar',
+        data: {
+            labels: topItems.map(i=>i.nombre),
+            datasets: [{
+                label: 'Valor Total ($)',
+                data: topItems.map(i=>i.valor),
+                backgroundColor: '#007bff',
+                borderColor: '#0056b3',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { tooltip: { callbacks: { label: (ctx)=> {
+                const v = ctx.parsed.y; const pct = totalTop? ((v/totalTop)*100).toFixed(1):0; return '$'+v.toLocaleString()+ ' ('+pct+'%)'; } } }, legend:{ display:false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+    document.getElementById('topValorResumen').textContent = 'Suma Top 10: $'+ totalTop.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
+
+    window.toggleValorScale = function(){
+        logScale = !logScale;
+        valorChart.options.scales.y.type = logScale ? 'logarithmic' : 'linear';
+        valorChart.update();
+    }
+
+    window.downloadChart = function(canvasId, filename){
+        const link = document.createElement('a');
+        link.href = document.getElementById(canvasId).toDataURL('image/png');
+        link.download = filename;
+        link.click();
+    }
+})();
 </script>
 
 <?php include '../../includes/footer.php'; ?>

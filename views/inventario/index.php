@@ -8,18 +8,19 @@ requireLogin();
 checkSessionTimeout();
 
 $pageTitle = 'Gestión de Inventario';
-include '../../includes/header.php';
+
+// Preparar datos y posible exportación CSV antes del header
+$searchTerm = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
+$categoriaFilter = isset($_GET['categoria']) ? sanitizeInput($_GET['categoria']) : '';
+$estadoFilter = isset($_GET['estado']) ? sanitizeInput($_GET['estado']) : '';
+$exportar = $_GET['exportar'] ?? '';
 
 try {
     $database = new Database();
     $db = $database->getConnection();
     $inventarioModel = new Inventario($db);
     $categoriaModel = new Categoria($db);
-    
-    $searchTerm = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
-    $categoriaFilter = isset($_GET['categoria']) ? sanitizeInput($_GET['categoria']) : '';
-    $estadoFilter = isset($_GET['estado']) ? sanitizeInput($_GET['estado']) : '';
-    
+
     if (!empty($searchTerm)) {
         $stmt = $inventarioModel->search($searchTerm);
     } elseif (!empty($categoriaFilter)) {
@@ -27,13 +28,55 @@ try {
     } else {
         $stmt = $inventarioModel->readAll();
     }
-    
+
+    // Recolectar filas para exportación si se requiere
+    $rows = [];
+    if (isset($stmt)) {
+        while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) { $rows[] = $r; }
+    }
+
+    // Exportación CSV limpia
+    if ($exportar === 'csv') {
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=inventario_' . date('Y-m-d') . '.csv');
+        $out = fopen('php://output','w');
+        fwrite($out, "\xEF\xBB\xBF");
+        fputcsv($out, ['ID_Inventario','Nombre','Descripcion','Categoria','Proveedor','Cantidad_Stock','Stock_Minimo','Unidad','Precio_Unitario','Valor_Total_Stock','Estado']);
+        foreach ($rows as $row) {
+            fputcsv($out, [
+                $row['ID_Inventario'] ?? '',
+                preg_replace('/[\r\n]+/',' ', $row['Nombre'] ?? ''),
+                preg_replace('/[\r\n]+/',' ', $row['Descripcion'] ?? ''),
+                preg_replace('/[\r\n]+/',' ', ($row['Nombre_Categoria'] ?? '')),
+                preg_replace('/[\r\n]+/',' ', ($row['Nombre_Proveedor'] ?? '')),
+                (int)($row['Cantidad_Stock'] ?? 0),
+                (int)($row['Stock_Minimo'] ?? 0),
+                $row['Unidad_Medida'] ?? '',
+                number_format((float)($row['Precio_Unitario'] ?? 0),2,'.',''),
+                number_format((float)($row['Valor_Total_Stock'] ?? 0),2,'.',''),
+                $row['Estado'] ?? ''
+            ]);
+        }
+        fclose($out);
+        exit;
+    }
+
+    // Volver a crear statement para la vista (porque ya se consumió)
+    if (!empty($searchTerm)) {
+        $stmt = $inventarioModel->search($searchTerm);
+    } elseif (!empty($categoriaFilter)) {
+        $stmt = $inventarioModel->getPorCategoria($categoriaFilter);
+    } else {
+        $stmt = $inventarioModel->readAll();
+    }
+
     $categorias = $categoriaModel->readAll();
-    
+
 } catch (Exception $e) {
     $error = "Error al cargar inventario: " . $e->getMessage();
 }
 
+include '../../includes/header.php';
 logActivity($_SESSION['user_id'], "Acceso a gestión de inventario");
 ?>
 
@@ -46,8 +89,15 @@ logActivity($_SESSION['user_id'], "Acceso a gestión de inventario");
             <a href="create.php" class="btn btn-primary me-2">
                 <i class="fas fa-plus"></i> Nuevo Item
             </a>
-            <a href="movimientos.php" class="btn btn-outline-info">
+            <a href="movimientos.php" class="btn btn-outline-info me-2">
                 <i class="fas fa-exchange-alt"></i> Movimientos
+            </a>
+            <a href="?exportar=csv<?php
+                $qs=[]; if($searchTerm) $qs[]='search=' . urlencode($searchTerm); if($categoriaFilter) $qs[]='categoria=' . $categoriaFilter; if($estadoFilter) $qs[]='estado=' . urlencode($estadoFilter); echo $qs ? '&' . implode('&',$qs):''; ?>" class="btn btn-outline-success">
+                <i class="fas fa-file-csv"></i> Exportar CSV
+            </a>
+            <a href="stock-bajo.php" class="btn btn-warning ms-2">
+                <i class="fas fa-exclamation-triangle"></i> Stock Bajo
             </a>
         </div>
     </div>
@@ -110,18 +160,10 @@ logActivity($_SESSION['user_id'], "Acceso a gestión de inventario");
                         <option value="Inactivo" <?php echo ($estadoFilter == 'Inactivo') ? 'selected' : ''; ?>>Inactivo</option>
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <div class="d-grid gap-2 d-md-flex">
-                        <a href="index.php" class="btn btn-outline-secondary">
-                            <i class="fas fa-times"></i> Limpiar
-                        </a>
-                        <a href="stock-bajo.php" class="btn btn-warning">
-                            <i class="fas fa-exclamation-triangle"></i> Stock Bajo
-                        </a>
-                        <button type="button" class="btn btn-outline-success" onclick="exportTable()">
-                            <i class="fas fa-download"></i> Exportar
-                        </button>
-                    </div>
+                <div class="col-md-3 d-flex align-items-center">
+                    <a href="index.php" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-times"></i> Limpiar
+                    </a>
                 </div>
             </form>
         </div>
@@ -187,12 +229,12 @@ logActivity($_SESSION['user_id'], "Acceso a gestión de inventario");
                             </td>
                             <td class="text-center no-print">
                                 <div class="btn-group" role="group">
-                                   
+                                    
                                     <a href="edit.php?id=<?php echo $row['ID_Inventario']; ?>" 
                                        class="btn btn-sm btn-outline-warning" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                   
+                                    
                                     <button type="button" class="btn btn-sm btn-outline-danger" 
                                             onclick="deleteItem('<?php echo $row['ID_Inventario']; ?>', '<?php echo htmlspecialchars($row['Nombre']); ?>')" 
                                             title="Eliminar">
@@ -228,28 +270,20 @@ function deleteItem(id, nombre) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = 'delete.php';
-        
         const idInput = document.createElement('input');
         idInput.type = 'hidden';
         idInput.name = 'id_inventario';
         idInput.value = id;
-        
         form.appendChild(idInput);
         document.body.appendChild(form);
         form.submit();
     }
 }
 
-function exportTable() {
-    Utils.exportTableToCSV('inventarioTable', 'inventario_' + new Date().toISOString().slice(0,10) + '.csv');
-}
-
 document.addEventListener('DOMContentLoaded', function() {
     SistemaKris.initDataTable('inventarioTable', {
         order: [[1, 'asc']],
-        columnDefs: [
-            { orderable: false, targets: [8] }
-        ]
+        columnDefs: [ { orderable: false, targets: [8] } ]
     });
 });
 </script>

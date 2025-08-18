@@ -94,9 +94,7 @@ logActivity($_SESSION['user_id'], "Acceso a gestión de inventario");
             <a href="create.php" class="btn btn-primary me-2">
                 <i class="fas fa-plus"></i> Nuevo Item
             </a>
-            <a href="movimientos.php" class="btn btn-outline-info me-2">
-                <i class="fas fa-exchange-alt"></i> Movimientos
-            </a>
+            
             <a href="?exportar=csv<?php
                 $qs=[]; if($searchTerm) $qs[]='search=' . urlencode($searchTerm); if($categoriaFilter) $qs[]='categoria=' . $categoriaFilter; if($estadoFilter) $qs[]='estado=' . urlencode($estadoFilter); echo $qs ? '&' . implode('&',$qs):''; ?>" class="btn btn-outline-success">
                 <i class="fas fa-file-csv"></i> Exportar CSV

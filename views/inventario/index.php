@@ -9,7 +9,7 @@ checkSessionTimeout();
 
 $pageTitle = 'Gestión de Inventario';
 
-// Preparar datos y posible exportación CSV antes del header
+// Filtros / parámetros
 $searchTerm = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
 $categoriaFilter = isset($_GET['categoria']) ? sanitizeInput($_GET['categoria']) : '';
 $estadoFilter = isset($_GET['estado']) ? sanitizeInput($_GET['estado']) : '';
@@ -18,24 +18,35 @@ $exportar = $_GET['exportar'] ?? '';
 try {
     $database = new Database();
     $db = $database->getConnection();
-    $inventarioModel = new Inventario($db);
     $categoriaModel = new Categoria($db);
 
-    if (!empty($searchTerm)) {
-        $stmt = $inventarioModel->search($searchTerm);
-    } elseif (!empty($categoriaFilter)) {
-        $stmt = $inventarioModel->getPorCategoria($categoriaFilter);
-    } else {
-        $stmt = $inventarioModel->readAll();
+    // Construir consulta unificada para que vista y export compartan EXACTAMENTE los mismos datos/orden
+    $query = "SELECT * FROM VW_Inventario_Completo";
+    $conditions = [];
+    $params = [];
+    if ($searchTerm !== '') {
+        $conditions[] = "(Nombre LIKE :search OR Descripcion LIKE :search OR Nombre_Categoria LIKE :search OR Nombre_Proveedor LIKE :search)";
+        $params[':search'] = "%{$searchTerm}%";
     }
-
-    // Recolectar filas para exportación si se requiere
-    $rows = [];
-    if (isset($stmt)) {
-        while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) { $rows[] = $r; }
+    if ($categoriaFilter !== '') {
+        $conditions[] = "ID_Categoria = :categoria";
+        $params[':categoria'] = $categoriaFilter;
     }
+    if ($estadoFilter !== '') {
+        $conditions[] = "Estado = :estado";
+        $params[':estado'] = $estadoFilter;
+    }
+    if ($conditions) {
+        $query .= ' WHERE ' . implode(' AND ', $conditions);
+    }
+    $query .= ' ORDER BY Nombre';
 
-    // Exportación CSV limpia
+    $stmt = $db->prepare($query);
+    foreach ($params as $k=>$v) { $stmt->bindValue($k,$v); }
+    $stmt->execute();
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Exportación CSV consistente con los datos mostrados
     if ($exportar === 'csv') {
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename=inventario_' . date('Y-m-d') . '.csv');
@@ -61,19 +72,13 @@ try {
         exit;
     }
 
-    // Volver a crear statement para la vista (porque ya se consumió)
-    if (!empty($searchTerm)) {
-        $stmt = $inventarioModel->search($searchTerm);
-    } elseif (!empty($categoriaFilter)) {
-        $stmt = $inventarioModel->getPorCategoria($categoriaFilter);
-    } else {
-        $stmt = $inventarioModel->readAll();
-    }
-
     $categorias = $categoriaModel->readAll();
+    $hasRows = count($rows) > 0;
 
 } catch (Exception $e) {
     $error = "Error al cargar inventario: " . $e->getMessage();
+    $rows = [];
+    $hasRows = false;
 }
 
 include '../../includes/header.php';
@@ -144,8 +149,7 @@ logActivity($_SESSION['user_id'], "Acceso a gestión de inventario");
                         <option value="">Todas las categorías</option>
                         <?php if (isset($categorias)): ?>
                             <?php while ($categoria = $categorias->fetch(PDO::FETCH_ASSOC)): ?>
-                                <option value="<?php echo $categoria['ID_Categoria']; ?>"
-                                        <?php echo ($categoriaFilter == $categoria['ID_Categoria']) ? 'selected' : ''; ?>>
+                                <option value="<?php echo $categoria['ID_Categoria']; ?>" <?php echo ($categoriaFilter == $categoria['ID_Categoria']) ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($categoria['Nombre_Categoria']); ?>
                                 </option>
                             <?php endwhile; ?>
@@ -173,13 +177,11 @@ logActivity($_SESSION['user_id'], "Acceso a gestión de inventario");
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">
                 Lista de Inventario
-                <?php if (!empty($searchTerm)): ?>
-                    - Resultados para: "<?php echo htmlspecialchars($searchTerm); ?>"
-                <?php endif; ?>
+                <?php if ($searchTerm !== ''): ?> - Resultados para: "<?php echo htmlspecialchars($searchTerm); ?>"<?php endif; ?>
             </h6>
         </div>
         <div class="card-body">
-            <?php if (isset($stmt) && $stmt->rowCount() > 0): ?>
+            <?php if ($hasRows): ?>
             <div class="table-responsive">
                 <table class="table table-bordered table-hover" id="inventarioTable">
                     <thead class="table-light">
@@ -196,14 +198,12 @@ logActivity($_SESSION['user_id'], "Acceso a gestión de inventario");
                         </tr>
                     </thead>
                     <tbody>
-                        <?php while ($row = $stmt->fetch(PDO::FETCH_ASSOC)): ?>
+                        <?php foreach ($rows as $row): ?>
                         <tr class="<?php echo ($row['Cantidad_Stock'] <= $row['Stock_Minimo']) ? 'table-warning' : ''; ?>">
                             <td><?php echo htmlspecialchars($row['ID_Inventario']); ?></td>
                             <td>
                                 <strong><?php echo htmlspecialchars($row['Nombre']); ?></strong>
-                                <?php if (!empty($row['Descripcion'])): ?>
-                                    <br><small class="text-muted"><?php echo htmlspecialchars($row['Descripcion']); ?></small>
-                                <?php endif; ?>
+                                <?php if (!empty($row['Descripcion'])): ?><br><small class="text-muted"><?php echo htmlspecialchars($row['Descripcion']); ?></small><?php endif; ?>
                             </td>
                             <td>
                                 <span class="badge bg-<?php echo ($row['Tipo_Categoria'] == 'Material') ? 'info' : 'warning'; ?>">
@@ -214,49 +214,32 @@ logActivity($_SESSION['user_id'], "Acceso a gestión de inventario");
                             <td>
                                 <strong><?php echo number_format($row['Cantidad_Stock']); ?></strong>
                                 <small class="text-muted"><?php echo htmlspecialchars($row['Unidad_Medida']); ?></small>
-                                <?php if ($row['Cantidad_Stock'] <= $row['Stock_Minimo']): ?>
-                                    <br><small class="text-warning"><i class="fas fa-exclamation-triangle"></i> Stock bajo</small>
-                                <?php endif; ?>
+                                <?php if ($row['Cantidad_Stock'] <= $row['Stock_Minimo']): ?><br><small class="text-warning"><i class="fas fa-exclamation-triangle"></i> Stock bajo</small><?php endif; ?>
                             </td>
                             <td><?php echo formatCurrency($row['Precio_Unitario']); ?></td>
                             <td><strong><?php echo formatCurrency($row['Valor_Total_Stock']); ?></strong></td>
                             <td>
-                                <span class="badge bg-<?php 
-                                    echo ($row['Estado'] == 'Activo') ? 'success' : 
-                                        (($row['Estado'] == 'Agotado') ? 'danger' : 'secondary'); ?>">
+                                <span class="badge bg-<?php echo ($row['Estado'] == 'Activo') ? 'success' : (($row['Estado'] == 'Agotado') ? 'danger' : 'secondary'); ?>">
                                     <?php echo htmlspecialchars($row['Estado']); ?>
                                 </span>
                             </td>
                             <td class="text-center no-print">
                                 <div class="btn-group" role="group">
-                                    
-                                    <a href="edit.php?id=<?php echo $row['ID_Inventario']; ?>" 
-                                       class="btn btn-sm btn-outline-warning" title="Editar">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    
-                                    <button type="button" class="btn btn-sm btn-outline-danger" 
-                                            onclick="deleteItem('<?php echo $row['ID_Inventario']; ?>', '<?php echo htmlspecialchars($row['Nombre']); ?>')" 
-                                            title="Eliminar">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                    <a href="edit.php?id=<?php echo $row['ID_Inventario']; ?>" class="btn btn-sm btn-outline-warning" title="Editar"><i class="fas fa-edit"></i></a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" title="Eliminar" onclick="deleteItem('<?php echo $row['ID_Inventario']; ?>', '<?php echo htmlspecialchars($row['Nombre']); ?>')"><i class="fas fa-trash"></i></button>
                                 </div>
                             </td>
                         </tr>
-                        <?php endwhile; ?>
+                        <?php endforeach; ?>
                     </tbody>
                 </table>
             </div>
             <?php else: ?>
             <div class="text-center py-5">
                 <i class="fas fa-boxes fa-3x text-muted mb-3"></i>
-                <h5 class="text-muted">
-                    <?php echo !empty($searchTerm) ? 'No se encontraron items que coincidan con la búsqueda.' : 'No hay items en el inventario.'; ?>
-                </h5>
-                <?php if (empty($searchTerm)): ?>
-                <a href="create.php" class="btn btn-primary mt-3">
-                    <i class="fas fa-plus"></i> Agregar Primer Item
-                </a>
+                <h5 class="text-muted"><?php echo $searchTerm !== '' ? 'No se encontraron items que coincidan con la búsqueda.' : 'No hay items en el inventario.'; ?></h5>
+                <?php if ($searchTerm === ''): ?>
+                <a href="create.php" class="btn btn-primary mt-3"><i class="fas fa-plus"></i> Agregar Primer Item</a>
                 <?php endif; ?>
             </div>
             <?php endif; ?>
@@ -281,10 +264,7 @@ function deleteItem(id, nombre) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    SistemaKris.initDataTable('inventarioTable', {
-        order: [[1, 'asc']],
-        columnDefs: [ { orderable: false, targets: [8] } ]
-    });
+    SistemaKris.initDataTable('inventarioTable', { order: [[1,'asc']], columnDefs: [{ orderable:false, targets:[8]}] });
 });
 </script>
 

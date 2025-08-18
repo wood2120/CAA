@@ -401,7 +401,7 @@ logActivity($_SESSION['user_id'], "Generó reporte de inventario");
                     </div>
                 </div>
                 <div class="card-body">
-                    <canvas id="valorChart" style="height:300px"></canvas>
+                    <canvas id="valorChart" style="height:220px"></canvas>
                     <div class="mt-3 small" id="topValorResumen"></div>
                 </div>
             </div>
@@ -656,39 +656,36 @@ $__topValor = array_slice($__topValor,0,10);
     const totalTop = topItems.reduce((s,i)=>s+i.valor,0);
     const ctxValor = document.getElementById('valorChart').getContext('2d');
     let logScale = false;
-    const valorChart = new Chart(ctxValor, {
+    if(window.__valorChartInstance) { window.__valorChartInstance.destroy(); }
+    window.__valorChartInstance = new Chart(ctxValor, {
         type: 'bar',
         data: {
             labels: topItems.map(i=>i.nombre),
             datasets: [{
                 label: 'Valor Total ($)',
                 data: topItems.map(i=>i.valor),
-                backgroundColor: '#007bff',
-                borderColor: '#0056b3',
-                borderWidth: 1
+                backgroundColor: '#1177dd',
+                borderColor: '#0a4d88',
+                borderWidth: 1,
+                maxBarThickness: 20,
+                barPercentage: 0.6,
+                categoryPercentage: 0.6
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { tooltip: { callbacks: { label: (ctx)=> {
-                const v = ctx.parsed.y; const pct = totalTop? ((v/totalTop)*100).toFixed(1):0; return '$'+v.toLocaleString()+ ' ('+pct+'%)'; } } }, legend:{ display:false } },
+            layout: { padding: { top: 5, right: 5, left: 5, bottom: 5 } },
+            plugins: { tooltip: { callbacks: { label: (ctx)=> { const v = ctx.parsed.y; const pct = totalTop? ((v/totalTop)*100).toFixed(1):0; return '$'+v.toLocaleString()+ ' ('+pct+'%)'; } } }, legend:{ display:false } },
             scales: { y: { beginAtZero: true } }
         }
     });
-    document.getElementById('topValorResumen').textContent = 'Suma Top 10: $'+ totalTop.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
-
+    const resumenEl = document.getElementById('topValorResumen');
+    if(resumenEl) resumenEl.textContent = 'Suma Top 10: $'+ totalTop.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
     window.toggleValorScale = function(){
         logScale = !logScale;
-        valorChart.options.scales.y.type = logScale ? 'logarithmic' : 'linear';
-        valorChart.update();
-    }
-
-    window.downloadChart = function(canvasId, filename){
-        const link = document.createElement('a');
-        link.href = document.getElementById(canvasId).toDataURL('image/png');
-        link.download = filename;
-        link.click();
+        window.__valorChartInstance.options.scales.y.type = logScale ? 'logarithmic' : 'linear';
+        window.__valorChartInstance.update();
     }
 })();
 </script>
